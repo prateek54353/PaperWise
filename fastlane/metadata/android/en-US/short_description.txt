@@ -1,0 +1,1 @@
+A simple, privacy-focused app to scan images and create PDF documents.

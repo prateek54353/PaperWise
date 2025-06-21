@@ -1,0 +1,11 @@
+Paperwise is a free and open-source tool that helps you quickly convert images from your camera or gallery into high-quality PDF files.
+
+Whether you're scanning documents, receipts, or notes, Paperwise offers a smooth and intuitive experience without ads or unnecessary permissions.
+
+Features:
+* Pick multiple images from your gallery or take new ones with your camera.
+* Reorder, crop, and delete images before creating your PDF.
+* Choose from different page sizes (A4, Letter, Fit to Image) for your document.
+* Adjust PDF quality to balance file size and clarity.
+* Dark and AMOLED Black themes for comfortable viewing.
+* Your files are saved locally and are under your control.

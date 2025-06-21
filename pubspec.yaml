@@ -1,0 +1,51 @@
+name: paperwise_pdf_maker
+description: A FOSS PDF maker app that converts images to PDF.
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  image: ^4.1.7
+  # UI & Core
+  cupertino_icons: ^1.0.2
+  intl: ^0.19.0
+  provider: ^6.1.2 # State management
+  shared_preferences: ^2.2.2 # For saving settings
+  flutter_animate: ^4.5.0 # For beautiful, simple animations
+  
+  # Image & PDF Handling
+  image_picker: ^1.0.7
+  image_cropper: ^9.1.0
+  flutter_image_compress: ^2.0.4
+  pdf: ^3.10.7
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  reorderable_grid_view: ^2.2.8
+  url_launcher: ^6.2.2
+  
+  # In-App PDF Viewer
+  pdfx: ^2.5.0
+
+  # Utilities
+  share_plus: ^7.2.1
+  open_filex: ^4.0.0 # Kept for fallback/optional 'Open With' feature
+  logger: ^2.0.2+1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    
+# ... rest of your pubspec.yaml
