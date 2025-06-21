@@ -10,7 +10,7 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   // Replace with your actual sponsor link
-  static const String _sponsorUrl = 'YOUR_SPONSOR_LINK_HERE';
+  static const String _sponsorUrl = 'https://coff.ee/prateek.aish';
   static const String _developerName = 'Prateek';
   static const String _developerBio =
       'A passionate developer from  India, dedicated to creating simple and useful open-source tools like Paperwise.';
