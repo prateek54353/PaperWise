@@ -1,6 +1,6 @@
 <div align="center">
   
-  <img src="https://raw.githubusercontent.com/prateek-aisho/paperwise-pdf-maker/main/assets/images/icon.png" alt="Paperwise Logo" width="120" />
+  <img src="https://github.com/prateek54353/PaperWise/blob/3fbb7bd501896723065847e7c5b9783189730aa6/icon.png" alt="Paperwise Logo" width="120" />
 
   # **Paperwise PDF Maker**
   
