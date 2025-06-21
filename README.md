@@ -17,9 +17,18 @@
 
 ---
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/prateek-aisho/paperwise-pdf-maker/main/assets/images/screenshot_1.jpg" alt="App Screenshot" width="300"/>
-</p>
+<div align="center">
+  <table>
+    <tr>
+      <td>
+        <img src="https://github.com/prateek54353/PaperWise/blob/d84c7a5be8a43f0bce2de8583a634e8a868e0700/screenshots/screenshot_1.jpg" height="600"/>
+      </td>
+      <td>
+        <img src="https://github.com/prateek54353/PaperWise/blob/d84c7a5be8a43f0bce2de8583a634e8a868e0700/screenshots/screenshot_2.jpg" height="600"/>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ## ✨ Features
 
