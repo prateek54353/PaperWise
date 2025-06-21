@@ -36,7 +36,7 @@
 You can download the latest version of Paperwise directly from GitHub.
 
 <div align="center" style="display:flex; justify-content:center; gap:10px;">
-  <a href="https://github.com/prateek-aisho/paperwise-pdf-maker/releases/latest">
+  <a href="https://github.com/prateek54353/PaperWise/releases/latest">
     <img src="https://img.shields.io/badge/Download%20Latest%20APK-GitHub%20Releases-blue?style=for-the-badge&logo=github" alt="Download from GitHub" />
   </a>
 </div>
