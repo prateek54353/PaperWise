@@ -23,23 +23,21 @@ class AppTheme {
     ),
   );
 
-  // New AMOLED Theme
   static final amoledTheme = ThemeData(
-    useMaterial3: true,
-    scaffoldBackgroundColor: Colors.black, // Pure black background
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blue,
-      brightness: Brightness.dark,
-      surface: Colors.black, // Make card surfaces and dialogs black
-      // ignore: deprecated_member_use
-      background: Colors.black,
-    ),
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
-      backgroundColor: Colors.black,
-    ),
-    cardTheme: const CardThemeData(
-      color: Color.fromARGB(255, 20, 20, 20) // Slightly off-black for contrast
-    )
-  );
+      useMaterial3: true,
+      scaffoldBackgroundColor: Colors.black,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: Colors.blue,
+        brightness: Brightness.dark,
+        surface: Colors.black,
+        background: Colors.black,
+      ),
+      appBarTheme: const AppBarTheme(
+        centerTitle: true,
+        backgroundColor: Colors.black,
+      ),
+      // FINAL FIX: Using 'CardTheme' which is correct for Flutter 3.22+
+      cardTheme: const CardThemeData(
+        color: Color.fromARGB(255, 20, 20, 20),
+      ));
 }
