@@ -6,15 +6,24 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// MODIFIED: This function now looks for key.properties inside the 'app' folder
 fun loadKeyProperties(): Properties {
     val properties = Properties()
-    val propertiesFile = project.file("key.properties") // Looks in the current module's folder ('app')
+    val propertiesFile = project.file("key.properties")
     if (propertiesFile.exists()) {
         properties.load(propertiesFile.inputStream())
     }
     return properties
 }
+
+// ADDED: Logic to read properties from local.properties
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.reader())
+}
+
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode")
+val flutterVersionName = localProperties.getProperty("flutter.versionName")
 
 android {
     namespace = "org.paperwise.app"
@@ -30,7 +39,6 @@ android {
             val keyProperties = loadKeyProperties()
             keyAlias = keyProperties.getProperty("keyAlias")
             keyPassword = keyProperties.getProperty("keyPassword")
-            // This now correctly points to the keystore in the same 'app' folder
             storeFile = file(keyProperties.getProperty("storeFile"))
             storePassword = keyProperties.getProperty("storePassword")
         }
@@ -49,8 +57,10 @@ android {
         applicationId = "org.paperwise.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+
+        // MODIFIED: Read version info from local.properties
+        versionCode = (flutterVersionCode ?: "1").toInt()
+        versionName = flutterVersionName ?: "1.0"
     }
 
     buildTypes {
