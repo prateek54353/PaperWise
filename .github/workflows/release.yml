@@ -18,11 +18,10 @@ jobs:
           channel: 'stable'
           flutter-version-file: 'pubspec.yaml'
 
-      # ADDED: This new step uses your GitHub Secrets to securely create the
-      # keystore and properties files on the virtual machine before the build.
       - name: Create Keystore and Properties Files
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+          # FIX: All lines below now correctly point to the android/app/ directory
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/app/key.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/app/key.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/app/key.properties
