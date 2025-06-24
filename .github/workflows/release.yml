@@ -1,8 +1,5 @@
-# .github/workflows/release.yml
-
 name: Build and Release APK
 
-# This workflow runs automatically whenever you push a new tag that starts with 'v' (e.g., v1.0.1)
 on:
   push:
     tags:
@@ -12,33 +9,36 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Step 1: Check out the code from your repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up a Flutter environment using the exact version from your pubspec.yaml
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          flutter-version-file: 'pubspec.yaml' # Automatically uses the version you pinned
+          flutter-version-file: 'pubspec.yaml'
 
-      # Step 3: Get Flutter dependencies
+      # ADDED: This new step uses your GitHub Secrets to securely create the
+      # keystore and properties files on the virtual machine before the build.
+      - name: Create Keystore and Properties Files
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/app/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/app/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/app/key.properties
+          echo "storeFile=release-keystore.jks" >> android/app/key.properties
+
       - name: Get dependencies
         run: flutter pub get
 
-      # Step 4: Build the release APK
       - name: Build release APK
         run: flutter build apk --release
 
-      # Step 5: Upload the APK to your GitHub Release
-      # This action automatically finds the release associated with your tag
-      # and uploads the specified file to it.
       - name: Upload APK to Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build/app/outputs/flutter-apk/app-release.apk
-          asset_name: Paperwise-v${{ github.ref_name }}.apk # Names the file like Paperwise-v1.0.0.apk
+          asset_name: Paperwise-v${{ github.ref_name }}.apk
           tag: ${{ github.ref }}
           overwrite: true
