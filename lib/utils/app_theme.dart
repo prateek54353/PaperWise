@@ -37,7 +37,7 @@ class AppTheme {
         backgroundColor: Colors.black,
       ),
       // FINAL FIX: Using 'CardTheme' which is correct for Flutter 3.22+
-      cardTheme: const CardThemeData(
+      cardTheme: const CardTheme(
         color: Color.fromARGB(255, 20, 20, 20),
       ));
 }
