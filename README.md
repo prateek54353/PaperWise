@@ -10,7 +10,7 @@
 
 <div align="center">
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/prateek54353/PaperWise?style=for-the-badge)](https://github.com/prateek-aisho/paperwise-pdf-maker/releases/latest)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/prateek54353/PaperWise?style=for-the-badge)](https://github.com/prateek54353/paperwise/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 </div>
