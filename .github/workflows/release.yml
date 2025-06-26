@@ -34,13 +34,13 @@ jobs:
         run: flutter pub get
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
-      - name: Upload APK to Release
+      - name: Upload APKs to Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/app/outputs/flutter-apk/app-release.apk
-          asset_name: Paperwise-v${{ github.ref_name }}.apk
+          file: build/app/outputs/flutter-apk/*.apk
+          asset_name: Paperwise-v${{ github.ref_name }}-${{ basename(github.event.release.tag_name) }}.apk # Adjust if you want more specific naming
           tag: ${{ github.ref }}
           overwrite: true
