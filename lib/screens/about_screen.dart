@@ -2,26 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:paperwise_pdf_maker/screens/legal/privacy_policy_screen.dart';
 import 'package:paperwise_pdf_maker/screens/legal/terms_screen.dart';
 import 'package:paperwise_pdf_maker/utils/constants.dart';
-
 import 'package:url_launcher/url_launcher.dart';
 
 /// A redesigned screen that displays information about the app and developer.
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  // Replace with your actual sponsor link
   static const String _sponsorUrl = 'https://coff.ee/prateek.aish';
-  static const String _developerName = 'Prateek';
-  static const String _developerBio =
-      'A passionate developer from  India, dedicated to creating simple and useful open-source tools like Paperwise.';
 
+  /// Launches a URL and shows an error if it fails.
   Future<void> _launchUrl(BuildContext context, String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not launch URL')),
-      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch $url')),
+        );
+      }
     }
+  }
+
+  /// contact email 
+  Future<void> _launchEmail(BuildContext context) async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: kContactEmail,
+      query: 'subject=Paperwise App Feedback (v$kAppVersion)', // Pre-fills the subject
+    );
+    _launchUrl(context, emailUri.toString());
   }
 
   @override
@@ -38,29 +46,29 @@ class AboutScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12.0),
+                color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(16.0),
               ),
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Replace with your app icon
-                  Icon(Icons.document_scanner_outlined, size: 60, color: theme.colorScheme.onSurfaceVariant),
+                  const Icon(Icons.document_scanner_outlined, size: 60),
                   const SizedBox(height: 8.0),
                   Text(kAppTitle, style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4.0),
-                  Text(kAppVersion, style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.textTheme.bodyMedium?.color?.withOpacity(0.7),
-                  )), // withOpacity is still supported for Color
-
+                  Text('Version $kAppVersion', style: theme.textTheme.bodyMedium),
                   const SizedBox(height: 16.0),
-                  Text(_developerName, style: theme.textTheme.titleLarge, textAlign: TextAlign.center),
+                  Text('Prateek', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 8.0),
-                  Text(_developerBio, style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+                  const Text(
+                    'A passionate developer from India, dedicated to creating simple and useful open-source tools like Paperwise.',
+                    style: TextStyle(fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
                   const SizedBox(height: 24.0),
                   ElevatedButton.icon(
-                    onPressed: _sponsorUrl.startsWith('YOUR') ? null : () => _launchUrl(context, _sponsorUrl),
+                    onPressed: () => _launchUrl(context, _sponsorUrl),
                     icon: const Icon(Icons.coffee_outlined),
                     label: const Text('Sponsor'),
                     style: ElevatedButton.styleFrom(
@@ -72,19 +80,21 @@ class AboutScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 16.0),
 
           // Lower Section: App Version, Legal, and Licenses
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text('More Info', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            child: Text('More Info & Support', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ),
+          // NEW: "Contact Us" button
           ListTile(
-            leading: const Icon(Icons.info_outline),
-            title: const Text('App Version'),
-            subtitle: Text(kAppVersion),
+            leading: const Icon(Icons.email_outlined),
+            title: const Text('Contact & Support'),
+            subtitle: const Text('Report a bug or give feedback'),
+            onTap: () => _launchEmail(context),
           ),
+          const Divider(indent: 16, endIndent: 16),
           ListTile(
             leading: const Icon(Icons.gavel_outlined),
             title: const Text('Terms & Conditions'),
@@ -112,9 +122,9 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24.0),
           Center(
-            child: Text('Made with ❤️ in India', style: theme.textTheme.bodySmall != null && theme.textTheme.bodySmall!.color != null
-                ? theme.textTheme.bodySmall!.copyWith(color: theme.textTheme.bodySmall!.color!.withOpacity(0.6))
-                : theme.textTheme.bodySmall),
+            child: Text('Made with ❤️ in India', style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)
+            )),
           ),
           const SizedBox(height: 16.0),
         ],
