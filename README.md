@@ -12,7 +12,7 @@
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/prateek54353/PaperWise?style=for-the-badge)](https://github.com/prateek54353/PaperWise/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://github.com/prateek54353/PaperWise/blob/main/LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/prateek54353/PaperWise/release.yml?branch=main&style=for-the-badge)](https://github.com/prateek54353/PaperWise/actions/workflows/release.yml)
+
 
 </div>
 
