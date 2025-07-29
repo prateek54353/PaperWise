@@ -10,7 +10,7 @@ fun loadKeyProperties(): Properties {
     val properties = Properties()
     val propertiesFile = file("key.properties")
     if (propertiesFile.exists()) {
-        properties.load(propertiesFile.readText(Charsets.UTF_8).reader())
+        properties.load(propertiesFile.inputStream())
     }
     return properties
 }
@@ -37,10 +37,10 @@ android {
     signingConfigs {
         create("release") {
             val keyProperties = loadKeyProperties()
-            keyAlias = keyProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")
-            keyPassword = keyProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")
-            storeFile = file(keyProperties.getProperty("storeFile") ?: System.getenv("STORE_FILE"))
-            storePassword = keyProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD")
+            keyAlias = keyProperties.getProperty("keyAlias")
+            keyPassword = keyProperties.getProperty("keyPassword")
+            storeFile = file(keyProperties.getProperty("storeFile"))
+            storePassword = keyProperties.getProperty("storePassword")
         }
     }
 
