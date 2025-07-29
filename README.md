@@ -31,16 +31,46 @@ Paperwise is a privacy-focused document scanner that turns your photos into high
 
 ## 📱 Screenshots
 
-*(New screenshots for v2.1.0 will be added here soon!)*
-
 <div align="center">
   <table>
     <tr>
       <td>
-        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/screenshot_1.jpg" height="600"/>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/1.jpg" height="600"/>
       </td>
       <td>
-        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/screenshot_2.jpg" height="600"/>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/2.jpg" height="600"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/3.jpg" height="600"/>
+      </td>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/4.jpg" height="600"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/5.jpg" height="600"/>
+      </td>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/6.jpg" height="600"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/7.jpg" height="600"/>
+      </td>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/8.jpg" height="600"/>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/9.jpg" height="600"/>
+      </td>
+      <td>
+        <img src="https://raw.githubusercontent.com/prateek54353/PaperWise/main/screenshots/10.jpg" height="600"/>
       </td>
     </tr>
   </table>
