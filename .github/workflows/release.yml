@@ -24,16 +24,18 @@ jobs:
       - name: Create Keystore and Properties Files
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/release-keystore.jks
-          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/app/key.properties
-          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/app/key.properties
-          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/app/key.properties
-          echo "storeFile=release-keystore.jks" >> android/app/key.properties
+
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build release APKs (split per ABI)
         run: flutter build apk --release --split-per-abi
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          STORE_FILE: android/app/release-keystore.jks
 
       - name: Upload APKs to Release
         uses: svenstaro/upload-release-action@v2

@@ -6,15 +6,6 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-fun loadKeyProperties(): Properties {
-    val properties = Properties()
-    val propertiesFile = file("key.properties")
-    if (propertiesFile.exists()) {
-        properties.load(propertiesFile.inputStream())
-    }
-    return properties
-}
-
 // ADDED: Logic to read properties from local.properties
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -36,11 +27,10 @@ android {
 
     signingConfigs {
         create("release") {
-            val keyProperties = loadKeyProperties()
-            keyAlias = keyProperties.getProperty("keyAlias")
-            keyPassword = keyProperties.getProperty("keyPassword")
-            storeFile = file(keyProperties.getProperty("storeFile"))
-            storePassword = keyProperties.getProperty("storePassword")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(System.getenv("STORE_FILE"))
+            storePassword = System.getenv("STORE_PASSWORD")
         }
     }
 
