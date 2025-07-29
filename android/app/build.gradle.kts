@@ -10,7 +10,7 @@ fun loadKeyProperties(): Properties {
     val properties = Properties()
     val propertiesFile = file("key.properties")
     if (propertiesFile.exists()) {
-        properties.load(propertiesFile.inputStream())
+        properties.load(propertiesFile.readText(Charsets.UTF_8).reader())
     }
     return properties
 }
