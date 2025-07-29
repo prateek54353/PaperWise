@@ -6,7 +6,7 @@ class ImagePreviewCard extends StatelessWidget {
   final int index;
   final VoidCallback onDelete;
   final VoidCallback onTap;
-  // The onRotate callback has been removed.
+  final VoidCallback onCrop;
 
   const ImagePreviewCard({
     super.key,
@@ -14,6 +14,8 @@ class ImagePreviewCard extends StatelessWidget {
     required this.index,
     required this.onDelete,
     required this.onTap,
+
+    required this.onCrop,
   });
 
   @override
@@ -33,13 +35,19 @@ class ImagePreviewCard extends StatelessWidget {
         ),
         footer: GridTileBar(
           backgroundColor: Colors.black54,
-          // The Row now only contains the delete button, aligned to the end (right).
           title: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+
+              _buildIconButton(
+                icon: Icons.crop_outlined,
+                onPressed: onCrop,
+                tooltip: 'Crop Image',
+              ),
               _buildIconButton(
                 icon: Icons.delete_outline,
                 onPressed: onDelete,
+                tooltip: 'Delete Image',
               ),
             ],
           ),
@@ -57,7 +65,11 @@ class ImagePreviewCard extends StatelessWidget {
   }
 
   // Helper widget to create compact icon buttons
-  Widget _buildIconButton({required IconData icon, required VoidCallback onPressed}) {
+  Widget _buildIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    String? tooltip,
+  }) {
     return IconButton(
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),
@@ -65,6 +77,7 @@ class ImagePreviewCard extends StatelessWidget {
       visualDensity: VisualDensity.compact,
       icon: Icon(icon, color: Colors.white),
       onPressed: onPressed,
+      tooltip: tooltip,
     );
   }
 }

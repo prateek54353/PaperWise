@@ -1,29 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:paperwise_pdf_maker/models/app_settings.dart';
 import 'package:paperwise_pdf_maker/services/settings_service.dart';
+import 'package:paperwise_pdf_maker/models/app_settings.dart';
 
 class SettingsProvider with ChangeNotifier {
-  AppSettings _settings;
   final SettingsService _settingsService;
+  late AppSettings _settings;
+  bool _isLoading = true;
 
-  SettingsProvider(this._settings, this._settingsService);
+  SettingsProvider(this._settingsService) {
+    _loadSettings();
+  }
 
   AppSettings get settings => _settings;
+  bool get isLoading => _isLoading;
 
-  Future<void> updateThemeMode(ThemeMode mode) async {
-    _settings = _settings.copyWith(themeMode: mode);
+  Future<void> _loadSettings() async {
+    _settings = await _settingsService.loadSettings();
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateThemeMode(ThemeMode themeMode) async {
+    _settings = _settings.copyWith(themeMode: themeMode);
     await _settingsService.saveSettings(_settings);
     notifyListeners();
   }
 
-  Future<void> updatePdfQuality(PdfQuality quality) async {
-    _settings = _settings.copyWith(pdfQuality: quality);
+  Future<void> updateCompressionLevel(CompressionLevel compressionLevel) async {
+    _settings = _settings.copyWith(compressionLevel: compressionLevel);
     await _settingsService.saveSettings(_settings);
     notifyListeners();
   }
 
-  Future<void> updateAmoledTheme(bool value) async {
-    _settings = _settings.copyWith(useAmoledTheme: value);
+  Future<void> updateAmoledTheme(bool useAmoledTheme) async {
+    _settings = _settings.copyWith(useAmoledTheme: useAmoledTheme);
     await _settingsService.saveSettings(_settings);
     notifyListeners();
   }

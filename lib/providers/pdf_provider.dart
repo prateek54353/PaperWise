@@ -1,14 +1,17 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 
 enum SortOption { date, name }
 
 class PdfProvider with ChangeNotifier {
   List<File> _pdfs = [];
+  Set<String> _selectedPdfPaths = {};
   bool _isLoading = false;
+  bool _isSelectionMode = false;
   String _searchQuery = '';
   SortOption _sortOption = SortOption.date;
+  final PDFService _pdfService = PDFService();
 
   List<File> get pdfs {
     List<File> filteredPdfs = _pdfs.where((pdf) {
@@ -25,10 +28,55 @@ class PdfProvider with ChangeNotifier {
   }
   
   bool get isLoading => _isLoading;
+  bool get isSelectionMode => _isSelectionMode;
   SortOption get sortOption => _sortOption;
+  Set<String> get selectedPdfPaths => _selectedPdfPaths;
+  int get selectedCount => _selectedPdfPaths.length;
+
+  bool isPdfSelected(File pdf) => _selectedPdfPaths.contains(pdf.path);
 
   PdfProvider() {
     loadPdfs();
+  }
+
+  void toggleSelectionMode() {
+    _isSelectionMode = !_isSelectionMode;
+    if (!_isSelectionMode) {
+      clearSelection();
+    }
+    notifyListeners();
+  }
+
+  void togglePdfSelection(File pdf) {
+    if (_selectedPdfPaths.contains(pdf.path)) {
+      _selectedPdfPaths.remove(pdf.path);
+      if (_selectedPdfPaths.isEmpty) {
+        _isSelectionMode = false;
+      }
+    } else {
+      _selectedPdfPaths.add(pdf.path);
+      _isSelectionMode = true;
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedPdfPaths.clear();
+    notifyListeners();
+  }
+
+  List<File> getSelectedPdfs() {
+    return _pdfs.where((pdf) => _selectedPdfPaths.contains(pdf.path)).toList();
+  }
+
+  Future<void> deleteSelectedPdfs() async {
+    final selectedPdfs = getSelectedPdfs();
+    for (final pdf in selectedPdfs) {
+      await deletePdf(pdf);
+    }
+    clearSelection();
+    _isSelectionMode = false;
+    notifyListeners();
   }
 
   Future<void> loadPdfs() async {
@@ -36,15 +84,21 @@ class PdfProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      final appDocDir = await getApplicationDocumentsDirectory();
-      final files = appDocDir.listSync()
-          .where((file) => file.path.toLowerCase().endsWith('.pdf') && file is File)
-          .cast<File>()
-          .toList();
+      final pdfDir = await _pdfService.getDefaultPdfDirectory();
+      final dir = Directory(pdfDir);
+      
+      if (await dir.exists()) {
+        final files = dir.listSync()
+            .where((file) => file.path.toLowerCase().endsWith('.pdf') && file is File)
+            .cast<File>()
+            .toList();
 
-      // Sort by date modified (newest first)
-      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
-      _pdfs = files;
+        // Sort by date modified (newest first)
+        files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+        _pdfs = files;
+      } else {
+        _pdfs = [];
+      }
     } catch (e) {
       debugPrint("Error loading PDFs: $e");
       _pdfs = [];
@@ -60,6 +114,7 @@ class PdfProvider with ChangeNotifier {
       final index = _pdfs.indexWhere((p) => p.path == pdfFile.path);
       if (index != -1) {
         _pdfs.removeAt(index);
+        _selectedPdfPaths.remove(pdfFile.path);
         notifyListeners();
       }
     } catch (e) {

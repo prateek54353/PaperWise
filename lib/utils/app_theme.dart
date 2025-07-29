@@ -1,43 +1,55 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static final lightTheme = ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
+  static ThemeData lightTheme(bool useAmoledTheme) {
+    final colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.blue,
       brightness: Brightness.light,
-    ),
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
-    ),
-  );
+    );
 
-  static final darkTheme = ThemeData(
-    useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+
+  static ThemeData darkTheme(bool useAmoledTheme) {
+    final colorScheme = ColorScheme.fromSeed(
       seedColor: Colors.blue,
       brightness: Brightness.dark,
-    ),
-    appBarTheme: const AppBarTheme(
-      centerTitle: true,
-    ),
-  );
+      background: useAmoledTheme ? Colors.black : null,
+      surface: useAmoledTheme ? Colors.black : null,
+    );
 
-  static final amoledTheme = ThemeData(
+    return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: Colors.black,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.blue,
-        brightness: Brightness.dark,
-        surface: Colors.black,
-        background: Colors.black,
+      colorScheme: colorScheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
       ),
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        backgroundColor: Colors.black,
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      // FINAL FIX: Using 'CardTheme' which is correct for Flutter 3.22+
-      cardTheme: const CardTheme(
-        color: Color.fromARGB(255, 20, 20, 20),
-      ));
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
 }

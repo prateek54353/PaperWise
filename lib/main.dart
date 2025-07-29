@@ -1,46 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:paperwise_pdf_maker/providers/pdf_provider.dart';
-import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
-import 'package:paperwise_pdf_maker/screens/home_screen.dart';
-import 'package:paperwise_pdf_maker/services/settings_service.dart';
-import 'package:paperwise_pdf_maker/utils/app_theme.dart';
 import 'package:provider/provider.dart';
+import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
+import 'package:paperwise_pdf_maker/services/settings_service.dart';
+import 'package:paperwise_pdf_maker/providers/pdf_provider.dart';
+import 'package:paperwise_pdf_maker/screens/home_screen.dart';
+import 'package:paperwise_pdf_maker/utils/app_theme.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final settingsService = SettingsService();
-  final settings = await settingsService.loadSettings();
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => SettingsProvider(settings, settingsService)),
-        ChangeNotifierProvider(create: (_) => PdfProvider()),
-      ],
-      child: const PaperwisePDFMaker(),
-    ),
-  );
+void main() {
+  runApp(const MyApp());
 }
 
-class PaperwisePDFMaker extends StatelessWidget {
-  const PaperwisePDFMaker({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<SettingsProvider>(
-      builder: (context, settingsProvider, child) {
-        return MaterialApp(
-          title: 'Paperwise PDF Maker',
-          debugShowCheckedModeBanner: false,
-          themeMode: settingsProvider.settings.themeMode,
-          theme: AppTheme.lightTheme,
-          darkTheme: settingsProvider.settings.useAmoledTheme
-              ? AppTheme.amoledTheme
-              : AppTheme.darkTheme,
-          home: const HomeScreen(),
-        );
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(SettingsService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => PdfProvider(),
+        ),
+      ],
+      child: Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, child) {
+          if (settingsProvider.isLoading) {
+            return const MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            );
+          }
+
+          return MaterialApp(
+            title: 'Paperwise',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme(settingsProvider.settings.useAmoledTheme),
+            darkTheme: AppTheme.darkTheme(settingsProvider.settings.useAmoledTheme),
+            themeMode: settingsProvider.settings.themeMode,
+            home: const HomeScreen(),
+          );
+        },
+      ),
     );
   }
 }

@@ -8,7 +8,7 @@ plugins {
 
 fun loadKeyProperties(): Properties {
     val properties = Properties()
-    val propertiesFile = project.file("key.properties")
+    val propertiesFile = rootProject.file("key.properties")
     if (propertiesFile.exists()) {
         properties.load(propertiesFile.inputStream())
     }
@@ -37,10 +37,10 @@ android {
     signingConfigs {
         create("release") {
             val keyProperties = loadKeyProperties()
-            keyAlias = keyProperties.getProperty("keyAlias")
-            keyPassword = keyProperties.getProperty("keyPassword")
-            storeFile = file(keyProperties.getProperty("storeFile"))
-            storePassword = keyProperties.getProperty("storePassword")
+            keyAlias = keyProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS")
+            keyPassword = keyProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD")
+            storeFile = file(keyProperties.getProperty("storeFile") ?: System.getenv("STORE_FILE"))
+            storePassword = keyProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD")
         }
     }
 
@@ -72,4 +72,21 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// FIX: Add a catch-all for build failures to provide more context
+// This is a common pattern to help diagnose Gradle issues.
+gradle.taskGraph.whenReady {
+    tasks.forEach { task ->
+        task.doLast {
+            if (task.state.failure != null) {
+                println("Error: Gradle task ${task.path} failed with exit code 1")
+                println("Try: > Run with --stacktrace option to get the stack trace.")
+                println("     > Run with --info or --debug option to get more log output.")
+                println("     > Run with --scan to get full insights.")
+                println("     > Get more help at https://help.gradle.org.")
+                println("Exited (1).")
+            }
+        }
+    }
 }

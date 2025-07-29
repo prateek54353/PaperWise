@@ -62,19 +62,30 @@ class AboutScreen extends StatelessWidget {
                   Text('Prateek', style: theme.textTheme.titleLarge),
                   const SizedBox(height: 8.0),
                   const Text(
-                    'A passionate developer from India, dedicated to creating simple and useful open-source tools like Paperwise.',
+                    'A passionate developer , dedicated to creating simple and useful open-source tools like Paperwise.',
                     style: TextStyle(fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24.0),
-                  ElevatedButton.icon(
-                    onPressed: () => _launchUrl(context, _sponsorUrl),
-                    icon: const Icon(Icons.coffee_outlined),
-                    label: const Text('Sponsor'),
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: theme.colorScheme.onPrimaryContainer,
-                      backgroundColor: theme.colorScheme.primaryContainer,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () => _launchUrl(context, _sponsorUrl),
+                        icon: const Icon(Icons.coffee_outlined),
+                        label: const Text('Sponsor'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: theme.colorScheme.onPrimaryContainer,
+                          backgroundColor: theme.colorScheme.primaryContainer,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      OutlinedButton.icon(
+                        onPressed: () => _launchUrl(context, 'https://github.com/prateek54353'),
+                        icon: const Icon(Icons.code),
+                        label: const Text('GitHub'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -122,7 +133,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24.0),
           Center(
-            child: Text('Made with ❤️ in India', style: theme.textTheme.bodySmall?.copyWith(
+            child: Text('Made with ❤️ ', style: theme.textTheme.bodySmall?.copyWith(
               color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)
             )),
           ),

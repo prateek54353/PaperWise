@@ -1,12 +1,172 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:paperwise_pdf_maker/models/app_settings.dart';
 import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
-import 'package:paperwise_pdf_maker/screens/about_screen.dart'; // Make sure this import exists
+import 'package:paperwise_pdf_maker/screens/about_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// A screen that allows the user to configure app settings.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _launchUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch $url')),
+        );
+      }
+    }
+  }
+
+  Future<void> _checkForUpdates(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    const repoUrl = 'https://api.github.com/repos/prateek54353/paperwise/releases/latest';
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Current version: $currentVersion\nChecking for updates...'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      final response = await http.get(Uri.parse(repoUrl));
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        final latestVersion = (json['tag_name'] as String).replaceAll('v', '');
+        final releaseUrl = json['html_url'] as String;
+
+        if (latestVersion.compareTo(currentVersion) > 0) {
+          if (context.mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Update Available'),
+                content: Text('A new version ($latestVersion) is available. Would you like to update?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Later'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      _launchUrl(context, releaseUrl);
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Update'),
+                  ),
+                ],
+              ),
+            );
+          }
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('You are running the latest version')),
+          );
+        }
+      } else {
+        throw Exception('Failed to load release info');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Failed to check for updates'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showThemeDialog(BuildContext context, SettingsProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Choose Theme'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ThemeMode.values.map((mode) {
+              return RadioListTile<ThemeMode>(
+                title: Text(_themeModeToString(mode)),
+                value: mode,
+                groupValue: provider.settings.themeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateThemeMode(value);
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCompressionDialog(BuildContext context, SettingsProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Image Compression'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: CompressionLevel.values.map((level) {
+              return RadioListTile<CompressionLevel>(
+                title: Text(level.name[0].toUpperCase() + level.name.substring(1)),
+                subtitle: Text(level.getDescription()),
+                value: level,
+                groupValue: provider.settings.compressionLevel,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateCompressionLevel(value);
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _themeModeToString(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light: return 'Light';
+      case ThemeMode.dark: return 'Dark';
+      case ThemeMode.system: return 'System Default';
+    }
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,31 +197,28 @@ class SettingsScreen extends StatelessWidget {
                     : null,
               ),
               const Divider(),
-              _buildSectionHeader(context, 'PDF Settings'),
+              _buildSectionHeader(context, 'Image Quality'),
               ListTile(
-                leading: const Icon(Icons.high_quality_outlined),
-                title: const Text('PDF Quality'),
-                subtitle: const Text('Sets the compression level for images.'),
-                trailing: DropdownButton<PdfQuality>(
-                  value: settingsProvider.settings.pdfQuality,
-                  onChanged: (quality) {
-                    if (quality != null) {
-                      settingsProvider.updatePdfQuality(quality);
-                    }
-                  },
-                  items: PdfQuality.values.map((quality) {
-                    return DropdownMenuItem(
-                      value: quality,
-                      child: Text(_qualityToString(quality)),
-                    );
-                  }).toList(),
-                ),
+                leading: const Icon(Icons.compress_outlined),
+                title: const Text('Image Compression'),
+                subtitle: Text(settingsProvider.settings.compressionLevel.getDescription()),
+                onTap: () => _showCompressionDialog(context, settingsProvider),
               ),
               const Divider(),
-
-              // FIX: This is the section that adds the "About" link.
-              // It was missing from the previous version.
-              _buildSectionHeader(context, 'About'),
+              _buildSectionHeader(context, 'Updates'),
+              ListTile(
+                leading: const Icon(Icons.system_update_outlined),
+                title: const Text('Check for Updates'),
+                subtitle: FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) return const Text('Loading...');
+                    return Text('Current version: ${snapshot.data!.version}');
+                  },
+                ),
+                onTap: () => _checkForUpdates(context),
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('About Paperwise'),
@@ -71,63 +228,6 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-        ),
-      ),
-    );
-  }
-
-  String _themeModeToString(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light: return 'Light';
-      case ThemeMode.dark: return 'Dark';
-      case ThemeMode.system: return 'System Default';
-    }
-  }
-  
-  String _qualityToString(PdfQuality quality) {
-      switch (quality) {
-      case PdfQuality.low: return 'Low';
-      case PdfQuality.medium: return 'Medium';
-      case PdfQuality.high: return 'High';
-    }
-  }
-
-  void _showThemeDialog(BuildContext context, SettingsProvider provider) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Choose Theme'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ThemeMode.values.map((mode) {
-              return RadioListTile<ThemeMode>(
-                title: Text(_themeModeToString(mode)),
-                value: mode,
-                groupValue: provider.settings.themeMode,
-                onChanged: (value) {
-                  if (value != null) {
-                    provider.updateThemeMode(value);
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }).toList(),
           ),
         );
       },
