@@ -34,6 +34,11 @@ jobs:
 
       - name: Build release APKs (split per ABI)
         run: flutter build apk --release --split-per-abi
+        env:
+          ORG_GRADLE_PROJECT_storePassword: ${{ secrets.STORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_keyPassword: ${{ secrets.KEY_PASSWORD }}
+          ORG_GRADLE_PROJECT_keyAlias: ${{ secrets.KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_storeFile: android/app/release-keystore.jks
 
       - name: Upload APKs to Release
         uses: svenstaro/upload-release-action@v2
