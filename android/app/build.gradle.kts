@@ -8,7 +8,7 @@ plugins {
 
 fun loadKeyProperties(): Properties {
     val properties = Properties()
-    val propertiesFile = rootProject.file("key.properties")
+    val propertiesFile = file("key.properties")
     if (propertiesFile.exists()) {
         properties.load(propertiesFile.inputStream())
     }
