@@ -72,50 +72,52 @@ class _ScanScreenState extends State<ScanScreen> {
       ),
       body: Stack(
         children: [
-          Column(
-            children: [
-              Expanded(
-                child: _selectedImages.isEmpty
-                    ? _buildEmptyState()
-                    : ReorderableGridView.builder(
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: _selectedImages.isEmpty
+                      ? _buildEmptyState()
+                      : ReorderableGridView.builder(
 
-                        itemCount: _selectedImages.length,
-                        onReorder: (oldIndex, newIndex) {
-                          setState(() {
-                            if (oldIndex < newIndex) {
-                              newIndex -= 1;
-                            }
-                            final item = _selectedImages.removeAt(oldIndex);
-                            _selectedImages.insert(newIndex, item);
-                          });
-                        },
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemBuilder: (context, index) {
-                          final imageFile = _selectedImages[index];
-                          return ReorderableDragStartListener(
-                            key: ValueKey(imageFile.path),
-                            index: index,
-                            child: ImagePreviewCard(
-                              image: imageFile,
+                          itemCount: _selectedImages.length,
+                          onReorder: (oldIndex, newIndex) {
+                            setState(() {
+                              if (oldIndex < newIndex) {
+                                newIndex -= 1;
+                              }
+                              final item = _selectedImages.removeAt(oldIndex);
+                              _selectedImages.insert(newIndex, item);
+                            });
+                          },
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemBuilder: (context, index) {
+                            final imageFile = _selectedImages[index];
+                            return ReorderableDragStartListener(
+                              key: ValueKey(imageFile.path),
                               index: index,
-                              onDelete: () {
-                                setState(() {
-                                  _selectedImages.removeAt(index);
-                                });
-                              },
-                              onTap: () => _cropImage(index),
-                              onCrop: () => _cropImage(index),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
+                              child: ImagePreviewCard(
+                                image: imageFile,
+                                index: index,
+                                onDelete: () {
+                                  setState(() {
+                                    _selectedImages.removeAt(index);
+                                  });
+                                },
+                                onTap: () => _cropImage(index),
+                                onCrop: () => _cropImage(index),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
           if (_isProcessing)
             Container(
