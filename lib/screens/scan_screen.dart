@@ -30,6 +30,15 @@ class _ScanScreenState extends State<ScanScreen> {
   String _scanName = 'New Scan';
 
   @override
+  void initState() {
+    super.initState();
+    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+    if (settings.enableTempCleanup) {
+      _pdfService.cleanupOldTempFiles(maxAge: settings.tempCleanupPeriod);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -77,65 +86,29 @@ class _ScanScreenState extends State<ScanScreen> {
               children: [
                 Expanded(
                   child: _selectedImages.isEmpty
-                      ? _buildEmptyState()
-                      : ReorderableGridView.builder(
-
-                          itemCount: _selectedImages.length,
+                      ? _ScanEmptyState(onAddImage: _showAddImageModal)
+                      : _ImageGrid(
+                          selectedImages: _selectedImages,
                           onReorder: (oldIndex, newIndex) {
                             setState(() {
-                              if (oldIndex < newIndex) {
-                                newIndex -= 1;
-                              }
+                              if (oldIndex < newIndex) newIndex -= 1;
                               final item = _selectedImages.removeAt(oldIndex);
                               _selectedImages.insert(newIndex, item);
                             });
                           },
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
-                          itemBuilder: (context, index) {
-                            final imageFile = _selectedImages[index];
-                            return ReorderableDragStartListener(
-                              key: ValueKey(imageFile.path),
-                              index: index,
-                              child: ImagePreviewCard(
-                                image: imageFile,
-                                index: index,
-                                onDelete: () {
-                                  setState(() {
-                                    _selectedImages.removeAt(index);
-                                  });
-                                },
-                                onTap: () => _cropImage(index),
-                                onCrop: () => _cropImage(index),
-                              ),
-                            );
+                          onDelete: (index) {
+                            setState(() {
+                              _selectedImages.removeAt(index);
+                            });
                           },
+                          onCrop: (index) => _cropImage(index),
                         ),
                 ),
               ],
             ),
           ),
           if (_isProcessing)
-            Container(
-              color: Colors.black54,
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    Text(
-                      _processingStatus,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _ProcessingOverlay(status: _processingStatus),
         ],
       ),
     );
@@ -375,8 +348,72 @@ class _ScanScreenState extends State<ScanScreen> {
       },
     );
   }
+}
 
-  Widget _buildEmptyState() {
+class _ProcessingOverlay extends StatelessWidget {
+  final String status;
+  const _ProcessingOverlay({required this.status});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black54,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(
+              status,
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImageGrid extends StatelessWidget {
+  final List<File> selectedImages;
+  final void Function(int oldIndex, int newIndex) onReorder;
+  final void Function(int index) onDelete;
+  final void Function(int index) onCrop;
+  const _ImageGrid({required this.selectedImages, required this.onReorder, required this.onDelete, required this.onCrop});
+  @override
+  Widget build(BuildContext context) {
+    return ReorderableGridView.builder(
+      itemCount: selectedImages.length,
+      onReorder: onReorder,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemBuilder: (context, index) {
+        final imageFile = selectedImages[index];
+        return ReorderableDragStartListener(
+          key: ValueKey(imageFile.path),
+          index: index,
+          child: ImagePreviewCard(
+            image: imageFile,
+            index: index,
+            onDelete: () => onDelete(index),
+            onTap: () => onCrop(index),
+            onCrop: () => onCrop(index),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ScanEmptyState extends StatelessWidget {
+  final VoidCallback onAddImage;
+  const _ScanEmptyState({required this.onAddImage});
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -404,7 +441,7 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: _showAddImageModal,
+            onPressed: onAddImage,
             icon: const Icon(Icons.add_photo_alternate_outlined),
             label: const Text('Add Images'),
           ),

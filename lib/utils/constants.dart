@@ -1,7 +1,7 @@
 
 // App Info
 const String kAppTitle = 'Paperwise PDF Maker';
-const String kAppVersion = '2.1.0'; // Define app version here
+const String kAppVersion = '2.1.1'; // Define app version here
 const String kContactEmail = 'aishwarprateek@gmail.com';
 
 // Screen Titles

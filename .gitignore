@@ -120,3 +120,4 @@ app.*.symbols
 !/dev/ci/**/Gemfile.lock
 olderfiles/
 android/app/keystore_base64.txt
+fastlane/metadata/android/en-US/changelogs/2.txt

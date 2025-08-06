@@ -37,4 +37,16 @@ class SettingsProvider with ChangeNotifier {
     await _settingsService.saveSettings(_settings);
     notifyListeners();
   }
+
+  Future<void> updateEnableTempCleanup(bool value) async {
+    _settings = _settings.copyWith(enableTempCleanup: value);
+    await _settingsService.saveSettings(_settings);
+    notifyListeners();
+  }
+
+  Future<void> updateTempCleanupPeriod(Duration period) async {
+    _settings = _settings.copyWith(tempCleanupPeriod: period);
+    await _settingsService.saveSettings(_settings);
+    notifyListeners();
+  }
 }

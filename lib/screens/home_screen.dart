@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:paperwise_pdf_maker/providers/pdf_provider.dart';
 import 'package:paperwise_pdf_maker/screens/pdf_viewer_screen.dart';
 import 'package:paperwise_pdf_maker/screens/scan_screen.dart';
-import 'package:paperwise_pdf_maker/screens/settings_screen.dart';
 import 'package:paperwise_pdf_maker/widgets/pdf_list_item.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -18,7 +17,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -180,14 +178,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _shareSelectedPDFs(PdfProvider provider) async {
-    final selectedPdfs = provider.getSelectedPdfs();
+  Future<void> _shareSelectedPDFs() async {
+    final selectedPdfs = context.read<PdfProvider>().getSelectedPdfs();
     try {
       await Share.shareXFiles(
         selectedPdfs.map((pdf) => XFile(pdf.path)).toList(),
         subject: 'Sharing ${selectedPdfs.length} ${selectedPdfs.length == 1 ? 'PDF' : 'PDFs'}',
       );
-      provider.clearSelection();
+      context.read<PdfProvider>().clearSelection();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -201,125 +199,59 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final pdfProvider = context.watch<PdfProvider>();
     final isSelectionMode = pdfProvider.isSelectionMode;
-    final selectedCount = pdfProvider.selectedCount;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return WillPopScope(
-      onWillPop: () async {
-        if (isSelectionMode) {
-          pdfProvider.toggleSelectionMode();
-          return false;
-        }
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          leading: isSelectionMode
-              ? IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => pdfProvider.toggleSelectionMode(),
-                )
-              : null,
-          title: isSelectionMode
-              ? Text('$selectedCount selected')
-              : const Text('Paperwise'),
-          actions: [
-            if (isSelectionMode) ...[
-              IconButton(
-                icon: const Icon(Icons.share_outlined),
-                onPressed: selectedCount > 0
-                    ? () => _shareSelectedPDFs(pdfProvider)
-                    : null,
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: selectedCount > 0
-                    ? () => _deleteSelectedPDFs(pdfProvider)
-                    : null,
-              ),
-            ] else
-              IconButton(
-                icon: const Icon(Icons.settings_outlined),
-                onPressed: () => Navigator.push(
-                    context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-              ),
-          ],
-          bottom: !isSelectionMode ? PreferredSize(
-            preferredSize: const Size.fromHeight(70),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search PDFs...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: PopupMenuButton<SortOption>(
-                    icon: const Icon(Icons.sort),
-                    tooltip: 'Sort PDFs',
-                    onSelected: (option) => pdfProvider.setSortOption(option),
-                    itemBuilder: (context) => [
-                      CheckedPopupMenuItem(
-                        value: SortOption.date,
-                        checked: pdfProvider.sortOption == SortOption.date,
-                        child: const Text('Sort by Date'),
-                      ),
-                      CheckedPopupMenuItem(
-                        value: SortOption.name,
-                        checked: pdfProvider.sortOption == SortOption.name,
-                        child: const Text('Sort by Name'),
-                      ),
-                    ],
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30.0),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Paperwise'),
+        actions: isSelectionMode
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  tooltip: 'Share Selected',
+                  onPressed: _shareSelectedPDFs,
                 ),
-              ),
-            ),
-          ) : null,
-        ),
-        floatingActionButton: !isSelectionMode
-            ? FloatingActionButton.extended(
-                onPressed: _navigateToScanScreen,
-                label: const Text('New Scan'),
-                icon: const Icon(Icons.add_a_photo_outlined),
-              ).animate().slideY(begin: 1.5, duration: 400.ms, curve: Curves.easeOut).fadeIn()
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  tooltip: 'Delete Selected',
+                  onPressed: () => _deleteSelectedPDFs(pdfProvider),
+                ),
+              ]
             : null,
-        body: RefreshIndicator(
-          onRefresh: () => pdfProvider.loadPdfs(),
-          child: pdfProvider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : pdfProvider.pdfs.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      key: _listKey,
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      itemCount: pdfProvider.pdfs.length,
-                      itemBuilder: (context, index) {
-                        final pdfFile = pdfProvider.pdfs[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: PdfListItem(
-                            pdfFile: pdfFile,
-                            onTap: () => _openPDF(pdfFile),
-                            onDelete: () => _deletePDF(pdfFile, index),
-                            onRename: () => _renamePdf(pdfFile),
-                            onShare: () => _sharePdf(pdfFile),
-                            onEdit: () => _openPDF(pdfFile),
-                            onCrop: () => _openPDF(pdfFile),
-                          ).animate().fadeIn(duration: 300.ms, delay: (100 * index).ms).slideX(begin: -0.2),
-                        );
-                      },
-                    ),
-        ),
+      ),
+      floatingActionButton: !isSelectionMode
+          ? FloatingActionButton.extended(
+              onPressed: _navigateToScanScreen,
+              label: const Text('New Scan'),
+              icon: const Icon(Icons.add_a_photo_outlined),
+            ).animate().slideY(begin: 1.5, duration: 400.ms, curve: Curves.easeOut).fadeIn()
+          : null,
+      body: RefreshIndicator(
+        onRefresh: () => pdfProvider.loadPdfs(),
+        child: pdfProvider.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : pdfProvider.pdfs.isEmpty
+                ? _HomeEmptyState(searchText: _searchController.text)
+                : _PdfListView(
+                    pdfs: pdfProvider.pdfs,
+                    onOpen: _openPDF,
+                    onDelete: _deletePDF,
+                    onRename: _renamePdf,
+                    onShare: _sharePdf,
+                    onEdit: _openPDF,
+                    onCrop: _openPDF,
+                    onShareSelected: _shareSelectedPDFs,
+                    onDeleteSelected: () => _deleteSelectedPDFs(pdfProvider),
+                    isSelectionMode: isSelectionMode,
+                  ),
       ),
     );
   }
+}
 
-  Widget _buildEmptyState() {
+class _HomeEmptyState extends StatelessWidget {
+  final String searchText;
+  const _HomeEmptyState({required this.searchText});
+  @override
+  Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: Column(
@@ -332,14 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            _searchController.text.isEmpty ? 'No PDFs Yet' : 'No Results Found',
+            searchText.isEmpty ? 'No PDFs Yet' : 'No Results Found',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            _searchController.text.isEmpty
+            searchText.isEmpty
                 ? 'Tap "New Scan" to create your first PDF'
                 : 'Try a different search term',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -349,6 +281,42 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ).animate().fadeIn(duration: 500.ms),
+    );
+  }
+}
+
+class _PdfListView extends StatelessWidget {
+  final List<File> pdfs;
+  final void Function(File pdfFile) onOpen;
+  final void Function(File pdfFile, int index) onDelete;
+  final void Function(File pdfFile) onRename;
+  final void Function(File pdfFile) onShare;
+  final void Function(File pdfFile) onEdit;
+  final void Function(File pdfFile) onCrop;
+  final void Function() onShareSelected;
+  final void Function() onDeleteSelected;
+  final bool isSelectionMode;
+  const _PdfListView({required this.pdfs, required this.onOpen, required this.onDelete, required this.onRename, required this.onShare, required this.onEdit, required this.onCrop, required this.onShareSelected, required this.onDeleteSelected, required this.isSelectionMode});
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      itemCount: pdfs.length,
+      itemBuilder: (context, index) {
+        final pdfFile = pdfs[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: PdfListItem(
+            pdfFile: pdfFile,
+            onTap: () => onOpen(pdfFile),
+            onDelete: () => onDelete(pdfFile, index),
+            onRename: () => onRename(pdfFile),
+            onShare: () => onShare(pdfFile),
+            onEdit: () => onEdit(pdfFile),
+            onCrop: () => onCrop(pdfFile),
+          ).animate().fadeIn(duration: 300.ms, delay: (100 * index).ms).slideX(begin: -0.2),
+        );
+      },
     );
   }
 }

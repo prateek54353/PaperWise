@@ -168,6 +168,58 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  String _cleanupPeriodToString(Duration period) {
+    if (period.inDays == 30) {
+      return 'Every month';
+    } else if (period.inDays == 90) {
+      return 'Every 3 months';
+    } else if (period.inDays == 270) {
+      return 'Every 9 months';
+    } else if (period.inDays == 365) {
+      return 'Every year';
+    } else {
+      return 'Every ${period.inDays} days';
+    }
+  }
+
+  void _showCleanupPeriodDialog(BuildContext context, SettingsProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Select Cleanup Period'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Duration(days: 30),  // 1 month
+              Duration(days: 90),  // 3 months
+              Duration(days: 270), // 9 months
+              Duration(days: 365), // 1 year
+            ].map((period) {
+              return RadioListTile<Duration>(
+                title: Text(_cleanupPeriodToString(period)),
+                value: period,
+                groupValue: provider.settings.tempCleanupPeriod,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateTempCleanupPeriod(value);
+                    Navigator.pop(context);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SettingsProvider>(
@@ -204,6 +256,22 @@ class SettingsScreen extends StatelessWidget {
                 subtitle: Text(settingsProvider.settings.compressionLevel.getDescription()),
                 onTap: () => _showCompressionDialog(context, settingsProvider),
               ),
+              const Divider(),
+              _buildSectionHeader(context, 'Temp File Cleanup'),
+              SwitchListTile(
+                secondary: const Icon(Icons.cleaning_services_outlined),
+                title: const Text('Enable Temp File Cleanup'),
+                subtitle: const Text('Automatically delete old temporary files'),
+                value: settingsProvider.settings.enableTempCleanup,
+                onChanged: (value) => settingsProvider.updateEnableTempCleanup(value),
+              ),
+              if (settingsProvider.settings.enableTempCleanup)
+                ListTile(
+                  leading: const Icon(Icons.timer_outlined),
+                  title: const Text('Cleanup Period'),
+                  subtitle: Text(_cleanupPeriodToString(settingsProvider.settings.tempCleanupPeriod)),
+                  onTap: () => _showCleanupPeriodDialog(context, settingsProvider),
+                ),
               const Divider(),
               _buildSectionHeader(context, 'Updates'),
               ListTile(

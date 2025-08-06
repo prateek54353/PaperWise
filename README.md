@@ -28,6 +28,7 @@ Paperwise is a privacy-focused document scanner that turns your photos into high
 - **In-App Updates**: Get notified when a new version is available.
 - **Privacy by Design**: No ads, no trackers, and no unnecessary permissions. Your data stays on your device.
 - **100% Open Source**: Free to use, modify, and distribute under the MIT License.
+- **Performance and Optimization**: Experience a smoother app with reduced widget rebuilds, efficient state management, and an optional, configurable temporary file cleanup to keep your storage bloat-free.
 
 ## 📱 Screenshots
 

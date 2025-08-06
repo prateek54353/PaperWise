@@ -100,8 +100,13 @@ class PDFService {
         throw Exception('Downloads directory not available');
       }
 
+      final appSpecificDir = Directory(path.join(downloadsDir.path, 'PaperWise-PDF'));
+      if (!await appSpecificDir.exists()) {
+        await appSpecificDir.create(recursive: true);
+      }
+      
       final fileName = path.basename(pdfFile.path);
-      final targetFile = File(path.join(downloadsDir.path, fileName));
+      final targetFile = File(path.join(appSpecificDir.path, fileName));
       
       // Copy the file to downloads
       await pdfFile.copy(targetFile.path);
@@ -143,6 +148,29 @@ class PDFService {
     } catch (e) {
       debugPrint('Error saving image: $e');
       rethrow;
+    }
+  }
+
+  /// Cleans up temp files older than [maxAge] in the system temp directory
+  Future<void> cleanupOldTempFiles({Duration maxAge = const Duration(days: 7)}) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final now = DateTime.now();
+      final files = tempDir.listSync(recursive: true);
+      for (final entity in files) {
+        if (entity is File) {
+          final stat = await entity.stat();
+          if (now.difference(stat.modified) > maxAge) {
+            try {
+              await entity.delete();
+            } catch (e) {
+              debugPrint('Failed to delete temp file: \\${entity.path}');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error cleaning up temp files: $e');
     }
   }
 }

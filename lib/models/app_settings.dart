@@ -39,22 +39,44 @@ class AppSettings {
   final ThemeMode themeMode;
   final CompressionLevel compressionLevel;
   final bool useAmoledTheme;
+  final bool enableTempCleanup;
+  final Duration tempCleanupPeriod;
 
   const AppSettings({
     this.themeMode = ThemeMode.system,
     this.compressionLevel = CompressionLevel.medium,
     this.useAmoledTheme = false,
+    this.enableTempCleanup = false, // Changed default to false
+    this.tempCleanupPeriod = const Duration(days: 30),
   });
 
   AppSettings copyWith({
     ThemeMode? themeMode,
     CompressionLevel? compressionLevel,
     bool? useAmoledTheme,
+    bool? enableTempCleanup,
+    Duration? tempCleanupPeriod,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
       compressionLevel: compressionLevel ?? this.compressionLevel,
       useAmoledTheme: useAmoledTheme ?? this.useAmoledTheme,
+      enableTempCleanup: enableTempCleanup ?? this.enableTempCleanup,
+      tempCleanupPeriod: tempCleanupPeriod ?? this.tempCleanupPeriod,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AppSettings &&
+          runtimeType == other.runtimeType &&
+          themeMode == other.themeMode &&
+          compressionLevel == other.compressionLevel &&
+          useAmoledTheme == other.useAmoledTheme &&
+          enableTempCleanup == other.enableTempCleanup &&
+          tempCleanupPeriod == other.tempCleanupPeriod;
+
+  @override
+  int get hashCode => Object.hash(themeMode, compressionLevel, useAmoledTheme, enableTempCleanup, tempCleanupPeriod);
 }
