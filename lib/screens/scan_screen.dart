@@ -2,17 +2,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
 import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 import 'package:paperwise_pdf_maker/widgets/image_preview_card.dart';
 import 'package:provider/provider.dart';
+import 'package:paperwise_pdf_maker/screens/tools/freeform_crop_screen.dart';
+import 'package:paperwise_pdf_maker/screens/tools/camera_scan_screen.dart';
 
 import 'package:paperwise_pdf_maker/models/app_settings.dart';
 import 'package:path/path.dart' as path;
 import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
+import 'package:image/image.dart' as img;
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -54,6 +56,11 @@ class _ScanScreenState extends State<ScanScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.camera_alt_outlined),
+            tooltip: 'Scan using camera',
+            onPressed: _openCameraScanner,
+          ),
           TextButton.icon(
             icon: const Icon(Icons.aspect_ratio_outlined),
             label: Text(_pageSizeMode.displayName),
@@ -104,6 +111,24 @@ class _ScanScreenState extends State<ScanScreen> {
                           onCrop: (index) => _cropImage(index),
                         ),
                 ),
+                if (_selectedImages.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _FilterChip(label: 'Auto', onTap: () => _applyFilter(_AutoEnhanceFilter())),
+                          const SizedBox(width: 8),
+                          _FilterChip(label: 'Grayscale', onTap: () => _applyFilter(_GrayscaleFilter())),
+                          const SizedBox(width: 8),
+                          _FilterChip(label: 'B/W', onTap: () => _applyFilter(_ThresholdFilter(threshold: 128))),
+                          const SizedBox(width: 8),
+                          _FilterChip(label: 'Sharpen', onTap: () => _applyFilter(_SharpenFilter())),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -135,34 +160,39 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _cropImage(int index) async {
     final imageFile = _selectedImages[index];
-    CroppedFile? croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      uiSettings: [
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
-          toolbarColor: Theme.of(context).primaryColor,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          hideBottomControls: false,
-        ),
-        IOSUiSettings(
-          title: 'Crop Image',
-          showActivitySheetOnDone: false,
-          showCancelConfirmationDialog: true,
-          resetAspectRatioEnabled: true,
-          aspectRatioPickerButtonHidden: false,
-          aspectRatioLockEnabled: false,
-        ),
-      ],
+    // Open freeform crop UI which returns a File path (new image)
+    final File? result = await Navigator.push<File?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FreeformCropScreen(imageFile: imageFile),
+      ),
     );
 
-    if (croppedFile != null && mounted) {
+    if (result != null && mounted) {
       final compressionLevel = context.read<SettingsProvider>().settings.compressionLevel;
-      final compressedFile = await _compressImage(File(croppedFile.path), compressionLevel.quality);
+      final compressedFile = await _compressImage(result, compressionLevel.quality);
       if (compressedFile != null) {
         setState(() => _selectedImages[index] = compressedFile);
       }
+    }
+  }
+
+  Future<void> _openCameraScanner() async {
+    final List<File>? newImages = await Navigator.push<List<File>?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CameraScanScreen(),
+      ),
+    );
+    if (newImages != null && newImages.isNotEmpty && mounted) {
+      final compressionLevel = context.read<SettingsProvider>().settings.compressionLevel;
+      for (final file in newImages) {
+        final compressed = await _compressImage(file, compressionLevel.quality);
+        if (compressed != null) {
+          _selectedImages.add(compressed);
+        }
+      }
+      setState(() {});
     }
   }
 
@@ -257,6 +287,30 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
+  Future<void> _applyFilter(_ImageFilter filter) async {
+    if (_selectedImages.isEmpty) return;
+    setState(() => _isProcessing = true);
+    for (int i = 0; i < _selectedImages.length; i++) {
+      final file = _selectedImages[i];
+      final bytes = await file.readAsBytes();
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) continue;
+      final processed = filter.process(decoded);
+      final outBytes = img.encodeJpg(processed, quality: 95);
+      final out = await _writeTempImage(outBytes, baseName: path.basenameWithoutExtension(file.path));
+      _selectedImages[i] = out;
+    }
+    if (mounted) setState(() => _isProcessing = false);
+  }
+
+  Future<File> _writeTempImage(List<int> bytes, {required String baseName}) async {
+    final dir = await getTemporaryDirectory();
+    final outPath = path.join(dir.path, '${baseName}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    final f = File(outPath);
+    await f.writeAsBytes(bytes);
+    return f;
+  }
+
   Future<String?> _showPdfNameDialog() async {
     final now = DateTime.now();
     final defaultName = 'scan_${now.year}${now.month}${now.day}_${now.hour}${now.minute}';
@@ -324,19 +378,52 @@ class _ScanScreenState extends State<ScanScreen> {
           title: const Text('Choose Page Size'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: PageSizeMode.values.map((mode) {
-              return RadioListTile<PageSizeMode>(
-                title: Text(mode.displayName),
-                value: mode,
-                groupValue: _pageSizeMode,
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => _pageSizeMode = value);
-                    Navigator.pop(context);
-                  }
-                },
-              );
-            }).toList(),
+              children: [
+                RadioListTile<PageSizeMode>(
+                  title: Text(PageSizeMode.fit.displayName),
+                  value: PageSizeMode.fit,
+                  groupValue: _pageSizeMode,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _pageSizeMode = value);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+                RadioListTile<PageSizeMode>(
+                  title: Text(PageSizeMode.a4.displayName),
+                  value: PageSizeMode.a4,
+                  groupValue: _pageSizeMode,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _pageSizeMode = value);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+                RadioListTile<PageSizeMode>(
+                  title: Text(PageSizeMode.letter.displayName),
+                  value: PageSizeMode.letter,
+                  groupValue: _pageSizeMode,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _pageSizeMode = value);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+                RadioListTile<PageSizeMode>(
+                  title: Text(PageSizeMode.legal.displayName),
+                  value: PageSizeMode.legal,
+                  groupValue: _pageSizeMode,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _pageSizeMode = value);
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ],
           ),
           actions: [
             TextButton(
@@ -448,5 +535,70 @@ class _ScanEmptyState extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _FilterChip({required this.label, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: onTap,
+      avatar: const Icon(Icons.tune, size: 18),
+    );
+  }
+}
+
+abstract class _ImageFilter {
+  img.Image process(img.Image input);
+}
+
+class _GrayscaleFilter implements _ImageFilter {
+  @override
+  img.Image process(img.Image input) {
+    return img.grayscale(input.clone());
+  }
+}
+
+class _ThresholdFilter implements _ImageFilter {
+  final int threshold;
+  const _ThresholdFilter({required this.threshold});
+  @override
+  img.Image process(img.Image input) {
+    final out = img.grayscale(input.clone());
+    for (int y = 0; y < out.height; y++) {
+      for (int x = 0; x < out.width; x++) {
+        final px = out.getPixel(x, y);
+        final l = img.getLuminanceRgb(px.r, px.g, px.b);
+        final v = l >= threshold ? 255 : 0;
+        out.setPixelRgba(x, y, v, v, v, 255);
+      }
+    }
+    return out;
+  }
+}
+
+class _SharpenFilter implements _ImageFilter {
+  @override
+  img.Image process(img.Image input) {
+    // Fallback sharpen via convolution kernel
+    final kernel = <num>[
+      0, -1, 0,
+      -1, 5, -1,
+      0, -1, 0,
+    ];
+    return img.convolution(input.clone(), filter: kernel, div: 1, offset: 0);
+  }
+}
+
+class _AutoEnhanceFilter implements _ImageFilter {
+  @override
+  img.Image process(img.Image input) {
+    final out = input.clone();
+    img.adjustColor(out, contrast: 1.1, saturation: 1.05, brightness: 0.0, gamma: 1.0);
+    return out;
   }
 }

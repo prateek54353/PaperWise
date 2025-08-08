@@ -29,7 +29,7 @@ class ImagePreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: GridTile(
           header: GridTileBar(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.7),
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
             title: Text(
               'Page ${index + 1}',
               textAlign: TextAlign.center,
@@ -38,7 +38,7 @@ class ImagePreviewCard extends StatelessWidget {
             ),
           ),
           footer: GridTileBar(
-            backgroundColor: colorScheme.surfaceVariant.withOpacity(0.7),
+            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [

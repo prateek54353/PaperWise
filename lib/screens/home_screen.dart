@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:paperwise_pdf_maker/providers/pdf_provider.dart';
 import 'package:paperwise_pdf_maker/screens/pdf_viewer_screen.dart';
 import 'package:paperwise_pdf_maker/screens/scan_screen.dart';
+import 'package:paperwise_pdf_maker/screens/settings_screen.dart';
 import 'package:paperwise_pdf_maker/widgets/pdf_list_item.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -215,7 +216,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () => _deleteSelectedPDFs(pdfProvider),
                 ),
               ]
-            : null,
+            : [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Settings',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
       ),
       floatingActionButton: !isSelectionMode
           ? FloatingActionButton.extended(
@@ -260,13 +274,13 @@ class _HomeEmptyState extends StatelessWidget {
           Icon(
             Icons.find_in_page_outlined,
             size: 80,
-            color: colorScheme.secondary.withOpacity(0.5),
+           color: colorScheme.secondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
             searchText.isEmpty ? 'No PDFs Yet' : 'No Results Found',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.7),
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 8),
@@ -275,7 +289,7 @@ class _HomeEmptyState extends StatelessWidget {
                 ? 'Tap "New Scan" to create your first PDF'
                 : 'Try a different search term',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: colorScheme.onSurface.withOpacity(0.5),
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
             ),
             textAlign: TextAlign.center,
           ),

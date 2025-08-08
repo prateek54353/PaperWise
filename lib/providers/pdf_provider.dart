@@ -6,7 +6,7 @@ enum SortOption { date, name }
 
 class PdfProvider with ChangeNotifier {
   List<File> _pdfs = [];
-  Set<String> _selectedPdfPaths = {};
+  final Set<String> _selectedPdfPaths = {};
   bool _isLoading = false;
   bool _isSelectionMode = false;
   String _searchQuery = '';

@@ -94,10 +94,10 @@ class SettingsScreen extends StatelessWidget {
           title: const Text('Choose Theme'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: ThemeMode.values.map((mode) {
-              return RadioListTile<ThemeMode>(
-                title: Text(_themeModeToString(mode)),
-                value: mode,
+            children: [
+              RadioListTile<ThemeMode>(
+                title: Text(_themeModeToString(ThemeMode.light)),
+                value: ThemeMode.light,
                 groupValue: provider.settings.themeMode,
                 onChanged: (value) {
                   if (value != null) {
@@ -105,8 +105,30 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.pop(context);
                   }
                 },
-              );
-            }).toList(),
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text(_themeModeToString(ThemeMode.dark)),
+                value: ThemeMode.dark,
+                groupValue: provider.settings.themeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateThemeMode(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<ThemeMode>(
+                title: Text(_themeModeToString(ThemeMode.system)),
+                value: ThemeMode.system,
+                groupValue: provider.settings.themeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateThemeMode(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
           ),
         );
       },
@@ -121,11 +143,11 @@ class SettingsScreen extends StatelessWidget {
           title: const Text('Image Compression'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: CompressionLevel.values.map((level) {
-              return RadioListTile<CompressionLevel>(
-                title: Text(level.name[0].toUpperCase() + level.name.substring(1)),
-                subtitle: Text(level.getDescription()),
-                value: level,
+            children: [
+              RadioListTile<CompressionLevel>(
+                title: Text(CompressionLevel.low.name[0].toUpperCase() + CompressionLevel.low.name.substring(1)),
+                subtitle: Text(CompressionLevel.low.getDescription()),
+                value: CompressionLevel.low,
                 groupValue: provider.settings.compressionLevel,
                 onChanged: (value) {
                   if (value != null) {
@@ -133,8 +155,32 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.pop(context);
                   }
                 },
-              );
-            }).toList(),
+              ),
+              RadioListTile<CompressionLevel>(
+                title: Text(CompressionLevel.medium.name[0].toUpperCase() + CompressionLevel.medium.name.substring(1)),
+                subtitle: Text(CompressionLevel.medium.getDescription()),
+                value: CompressionLevel.medium,
+                groupValue: provider.settings.compressionLevel,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateCompressionLevel(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<CompressionLevel>(
+                title: Text(CompressionLevel.high.name[0].toUpperCase() + CompressionLevel.high.name.substring(1)),
+                subtitle: Text(CompressionLevel.high.getDescription()),
+                value: CompressionLevel.high,
+                groupValue: provider.settings.compressionLevel,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateCompressionLevel(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -191,14 +237,9 @@ class SettingsScreen extends StatelessWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Duration(days: 30),  // 1 month
-              Duration(days: 90),  // 3 months
-              Duration(days: 270), // 9 months
-              Duration(days: 365), // 1 year
-            ].map((period) {
-              return RadioListTile<Duration>(
-                title: Text(_cleanupPeriodToString(period)),
-                value: period,
+              RadioListTile<Duration>(
+                title: Text(_cleanupPeriodToString(const Duration(days: 30))),
+                value: const Duration(days: 30),
                 groupValue: provider.settings.tempCleanupPeriod,
                 onChanged: (value) {
                   if (value != null) {
@@ -206,8 +247,41 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.pop(context);
                   }
                 },
-              );
-            }).toList(),
+              ),
+              RadioListTile<Duration>(
+                title: Text(_cleanupPeriodToString(const Duration(days: 90))),
+                value: const Duration(days: 90),
+                groupValue: provider.settings.tempCleanupPeriod,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateTempCleanupPeriod(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<Duration>(
+                title: Text(_cleanupPeriodToString(const Duration(days: 270))),
+                value: const Duration(days: 270),
+                groupValue: provider.settings.tempCleanupPeriod,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateTempCleanupPeriod(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<Duration>(
+                title: Text(_cleanupPeriodToString(const Duration(days: 365))),
+                value: const Duration(days: 365),
+                groupValue: provider.settings.tempCleanupPeriod,
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.updateTempCleanupPeriod(value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
           ),
           actions: [
             TextButton(

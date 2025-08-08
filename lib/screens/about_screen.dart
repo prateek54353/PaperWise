@@ -46,7 +46,7 @@ class AboutScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(16.0),
               ),
               padding: const EdgeInsets.all(20.0),
@@ -134,7 +134,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 24.0),
           Center(
             child: Text('Made with ❤️ ', style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.textTheme.bodySmall?.color?.withOpacity(0.6)
+              color: theme.textTheme.bodySmall?.color?.withValues(alpha: 0.6),
             )),
           ),
           const SizedBox(height: 16.0),

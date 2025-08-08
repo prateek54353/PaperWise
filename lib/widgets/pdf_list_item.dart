@@ -54,7 +54,7 @@ class PdfListItem extends StatelessWidget {
               selected: isSelected,
               button: true,
               child: Container(
-                color: isSelected ? colorScheme.primaryContainer.withOpacity(0.2) : null,
+                color: isSelected ? colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -73,7 +73,7 @@ class PdfListItem extends StatelessWidget {
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? colorScheme.primaryContainer.withOpacity(0.8)
+                                      ? colorScheme.primaryContainer.withValues(alpha: 0.8)
                                       : Colors.transparent,
                                   shape: BoxShape.circle,
                                 ),
