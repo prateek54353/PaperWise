@@ -25,7 +25,7 @@ val hasReleaseSigning = listOf(
 
 android {
     namespace = "org.paperwise.app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
 
     dependenciesInfo {
         includeInApk = false
@@ -55,7 +55,7 @@ android {
     defaultConfig {
         applicationId = "org.paperwise.app"
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
 
         // MODIFIED: Read version info from local.properties
         versionCode = (flutterVersionCode ?: "1").toInt()

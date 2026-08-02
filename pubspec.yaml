@@ -34,9 +34,7 @@ dependencies:
   package_info_plus: ^8.3.0 # Added for update checks
   camera: ^0.10.5+9
   
-  # OCR
-  google_mlkit_text_recognition: ^0.11.0
-  
+
   # In-App PDF Viewer
   pdfx: ^2.5.0
 
