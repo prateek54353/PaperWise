@@ -83,30 +83,7 @@ python scripts/bump_version.py patch --dry-run
 - Android: `app-arm64-v8a-release.apk`, `app-armeabi-v7a-release.apk`, `app-x86_64-release.apk`
 - iOS: `Paperwise-unsigned-{version}.ipa`
 
-### Android Release Workflow (`.github/workflows/release.yml`)
-
-**Trigger:** Push tags matching `v*`
-
-**Jobs:**
-1. `version-sync` - Updates version info
-2. `build` - Builds Android APKs only
-
-**Artifacts:** Android APKs (split per ABI)
-
-### iOS Build Workflow (`.github/workflows/build-ios.yml`)
-
-**Trigger:** 
-- Push to `main` branch
-- Push tags matching `v*`
-- Manual workflow dispatch
-
-**Jobs:**
-1. `version-sync` - Updates version info (only on tags)
-2. `build-ios` - Builds iOS unsigned IPA
-
-**Artifacts:**
-- iOS unsigned IPA (uploaded as GitHub artifact)
-- iOS simulator app (uploaded as GitHub artifact)
+This is the single workflow that handles both Android and iOS releases automatically when you push a version tag.
 
 ## GitHub Secrets Required
 
