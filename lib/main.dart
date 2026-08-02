@@ -1,51 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
-import 'package:paperwise_pdf_maker/services/settings_service.dart';
-import 'package:paperwise_pdf_maker/providers/pdf_provider.dart';
-import 'package:paperwise_pdf_maker/screens/home_screen.dart';
-import 'package:paperwise_pdf_maker/utils/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:paperwise_pdf_maker/core/theme/app_theme.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/home_screen.dart';
+import 'package:paperwise_pdf_maker/features/settings/presentation/providers/settings_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ProviderScope(child: MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(
-          create: (_) => SettingsProvider(SettingsService()),
-        ),
-        ChangeNotifierProvider(
-          create: (_) => PdfProvider(),
-        ),
-      ],
-      child: Consumer<SettingsProvider>(
-        builder: (context, settingsProvider, child) {
-          if (settingsProvider.isLoading) {
-            return const MaterialApp(
-              home: Scaffold(
-                body: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              ),
-            );
-          }
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settingsState = ref.watch(settingsProvider);
 
-          return MaterialApp(
-            title: 'Paperwise',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme(settingsProvider.settings.useAmoledTheme),
-            darkTheme: AppTheme.darkTheme(settingsProvider.settings.useAmoledTheme),
-            themeMode: settingsProvider.settings.themeMode,
-            home: const HomeScreen(),
-          );
-        },
-      ),
+    if (settingsState.isLoading) {
+      return const MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    final settings = settingsState.settings;
+
+    return MaterialApp(
+      title: 'Paperwise',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme(settings.useAmoledTheme),
+      darkTheme: AppTheme.darkTheme(settings.useAmoledTheme),
+      themeMode: settings.themeMode,
+      home: const HomeScreen(),
     );
   }
 }

@@ -7,6 +7,7 @@ class ImagePreviewCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onTap;
   final VoidCallback onCrop;
+  final VoidCallback onEdit;
 
   const ImagePreviewCard({
     super.key,
@@ -14,8 +15,8 @@ class ImagePreviewCard extends StatelessWidget {
     required this.index,
     required this.onDelete,
     required this.onTap,
-
     required this.onCrop,
+    required this.onEdit,
   });
 
   @override
@@ -29,7 +30,8 @@ class ImagePreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: GridTile(
           header: GridTileBar(
-            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+            backgroundColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
             title: Text(
               'Page ${index + 1}',
               textAlign: TextAlign.center,
@@ -38,11 +40,18 @@ class ImagePreviewCard extends StatelessWidget {
             ),
           ),
           footer: GridTileBar(
-            backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+            backgroundColor:
+                colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
             title: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-
+                _buildIconButton(
+                  icon: Icons.tune_outlined,
+                  onPressed: onEdit,
+                  tooltip: 'Apply filter',
+                  semanticsLabel: 'Apply image filter',
+                  color: colorScheme.secondary,
+                ),
                 _buildIconButton(
                   icon: Icons.crop_outlined,
                   onPressed: onCrop,
@@ -62,10 +71,18 @@ class ImagePreviewCard extends StatelessWidget {
           ),
           child: InkWell(
             onTap: onTap,
-            child: Image.file(
-              image,
-              fit: BoxFit.cover,
-              semanticLabel: 'Image ${index + 1} for PDF',
+            child: LayoutBuilder(
+              builder: (context, constraints) => Image.file(
+                image,
+                fit: BoxFit.cover,
+                cacheWidth: (constraints.maxWidth *
+                        MediaQuery.of(context).devicePixelRatio)
+                    .round(),
+                semanticLabel: 'Image ${index + 1} for PDF',
+                errorBuilder: (_, __, ___) => const Center(
+                  child: Icon(Icons.broken_image_outlined),
+                ),
+              ),
             ),
           ),
         ),

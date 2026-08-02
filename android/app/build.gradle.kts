@@ -15,6 +15,13 @@ if (localPropertiesFile.exists()) {
 
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode")
 val flutterVersionName = localProperties.getProperty("flutter.versionName")
+val releaseStoreFile = System.getenv("STORE_FILE")
+val hasReleaseSigning = listOf(
+    releaseStoreFile,
+    System.getenv("STORE_PASSWORD"),
+    System.getenv("KEY_ALIAS"),
+    System.getenv("KEY_PASSWORD"),
+).all { !it.isNullOrBlank() }
 
 android {
     namespace = "org.paperwise.app"
@@ -26,11 +33,13 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
-            storeFile = file(System.getenv("STORE_FILE"))
-            storePassword = System.getenv("STORE_PASSWORD")
+        if (hasReleaseSigning) {
+            create("release") {
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+                storeFile = file(requireNotNull(releaseStoreFile))
+                storePassword = System.getenv("STORE_PASSWORD")
+            }
         }
     }
 
@@ -55,7 +64,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }

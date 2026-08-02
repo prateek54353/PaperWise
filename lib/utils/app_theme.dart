@@ -25,7 +25,7 @@ class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),
@@ -57,7 +57,7 @@ class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      snackBarTheme: SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),

@@ -22,7 +22,8 @@ class PDFService {
   /// Gets the default save directory for images
   Future<String> getDefaultImageDirectory() async {
     final documentsDir = await getApplicationDocumentsDirectory();
-    final imageDir = Directory(path.join(documentsDir.path, 'Paperwise', 'Images'));
+    final imageDir =
+        Directory(path.join(documentsDir.path, 'Paperwise', 'Images'));
     if (!await imageDir.exists()) {
       await imageDir.create(recursive: true);
     }
@@ -81,9 +82,10 @@ class PDFService {
       final saveLocation = await getDefaultPdfDirectory();
 
       // Ensure valid filename
-      final sanitizedFileName = fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+      final sanitizedFileName =
+          fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
       final file = File(path.join(saveLocation, sanitizedFileName));
-      
+
       await file.writeAsBytes(await pdf.save());
       return file;
     } catch (e) {
@@ -100,14 +102,15 @@ class PDFService {
         throw Exception('Downloads directory not available');
       }
 
-      final appSpecificDir = Directory(path.join(downloadsDir.path, 'PaperWise-PDF'));
+      final appSpecificDir =
+          Directory(path.join(downloadsDir.path, 'PaperWise-PDF'));
       if (!await appSpecificDir.exists()) {
         await appSpecificDir.create(recursive: true);
       }
-      
+
       final fileName = path.basename(pdfFile.path);
       final targetFile = File(path.join(appSpecificDir.path, fileName));
-      
+
       // Copy the file to downloads
       await pdfFile.copy(targetFile.path);
       return targetFile;
@@ -136,13 +139,13 @@ class PDFService {
       final imageDir = await getDefaultImageDirectory();
       final originalName = path.basenameWithoutExtension(imageFile.path);
       final extension = path.extension(imageFile.path);
-      
+
       // Add timestamp to avoid overwriting
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final fileName = '${originalName}_$timestamp$extension';
-      
+
       final targetFile = File(path.join(imageDir, fileName));
-      
+
       // Copy the image to the target location
       return await imageFile.copy(targetFile.path);
     } catch (e) {
@@ -152,12 +155,13 @@ class PDFService {
   }
 
   /// Cleans up temp files older than [maxAge] in the system temp directory
-  Future<void> cleanupOldTempFiles({Duration maxAge = const Duration(days: 7)}) async {
+  Future<void> cleanupOldTempFiles(
+      {Duration maxAge = const Duration(days: 7)}) async {
     try {
       final tempDir = await getTemporaryDirectory();
       final now = DateTime.now();
-      final files = tempDir.listSync(recursive: true);
-      for (final entity in files) {
+      await for (final entity
+          in tempDir.list(recursive: true, followLinks: false)) {
         if (entity is File) {
           final stat = await entity.stat();
           if (now.difference(stat.modified) > maxAge) {

@@ -1,42 +1,59 @@
-name: iOS-ipa-build
+name: Build unsigned iOS artifacts
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build
+    name: Build unsigned iOS artifacts
     runs-on: macos-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-          architecture: x64
-      - run: flutter pub get
-      
+          flutter-version: "3.22.2"
+          cache: true
 
-      - run: pod repo update
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Install CocoaPods dependencies
+        run: pod install --repo-update
         working-directory: ios
 
-      - run: flutter build ios --release --no-codesign
+      - name: Build unsigned device app
+        run: flutter build ios --release --no-codesign
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      - name: Package unsigned IPA for inspection
+        run: |
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          mkdir -p build/ios/ipa
+          cp -R build/ios/iphoneos/Runner.app "$RUNNER_TEMP/ipa/Payload/Runner.app"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/ipa/Payload" build/ios/ipa/Paperwise-unsigned.ipa
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      - name: Build simulator app
+        run: flutter build ios --debug --simulator
 
-      - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: v1.0
-          overwrite: true
-          body: "This is first release"
+          name: Paperwise-unsigned-IPA-${{ github.sha }}
+          path: build/ios/ipa/Paperwise-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Paperwise-iOS-simulator-app-${{ github.sha }}
+          path: build/ios/iphonesimulator/Runner.app
+          if-no-files-found: error

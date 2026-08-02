@@ -1,29 +1,30 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
-import 'package:paperwise_pdf_maker/providers/settings_provider.dart';
+import 'package:paperwise_pdf_maker/features/settings/domain/value_objects/compression_level.dart';
+import 'package:paperwise_pdf_maker/features/settings/presentation/providers/settings_provider.dart';
+import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
+import 'package:paperwise_pdf_maker/screens/tools/camera_scan_screen.dart';
+import 'package:paperwise_pdf_maker/screens/tools/image_filter_editor_screen.dart';
 import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 import 'package:paperwise_pdf_maker/widgets/image_preview_card.dart';
-import 'package:provider/provider.dart';
-import 'package:paperwise_pdf_maker/screens/tools/freeform_crop_screen.dart';
-import 'package:paperwise_pdf_maker/screens/tools/camera_scan_screen.dart';
+import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
-import 'package:paperwise_pdf_maker/models/app_settings.dart';
-import 'package:path/path.dart' as path;
-import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
-import 'package:image/image.dart' as img;
-
-class ScanScreen extends StatefulWidget {
+class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
 
   @override
-  State<ScanScreen> createState() => _ScanScreenState();
+  ConsumerState<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen> {
+class _ScanScreenState extends ConsumerState<ScanScreen> {
   final List<File> _selectedImages = [];
   final PDFService _pdfService = PDFService();
   bool _isProcessing = false;
@@ -34,9 +35,11 @@ class _ScanScreenState extends State<ScanScreen> {
   @override
   void initState() {
     super.initState();
-    final settings = Provider.of<SettingsProvider>(context, listen: false).settings;
+    final settings = ref.read(settingsProvider).settings;
     if (settings.enableTempCleanup) {
-      _pdfService.cleanupOldTempFiles(maxAge: settings.tempCleanupPeriod);
+      unawaited(
+        _pdfService.cleanupOldTempFiles(maxAge: settings.tempCleanupPeriod),
+      );
     }
   }
 
@@ -44,51 +47,39 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: GestureDetector(
-          onTap: _renameScan,
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(_scanName),
-              ),
-              const Icon(Icons.edit_outlined, size: 16),
-            ],
-          ),
+        title: Text(
+          _scanName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Rename scan',
+            onPressed: _renameScan,
+          ),
           IconButton(
             icon: const Icon(Icons.camera_alt_outlined),
             tooltip: 'Scan using camera',
             onPressed: _openCameraScanner,
           ),
-          TextButton.icon(
+          IconButton(
             icon: const Icon(Icons.aspect_ratio_outlined),
-            label: Text(_pageSizeMode.displayName),
+            tooltip: 'Page size: ${_pageSizeMode.displayName}',
             onPressed: _showPageSizeDialog,
           ),
         ],
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_selectedImages.isNotEmpty)
-            FloatingActionButton(
-              onPressed: _showAddImageModal,
-              heroTag: 'addMore',
-              child: const Icon(Icons.add),
-            ),
-          const SizedBox(height: 16),
-          FloatingActionButton.extended(
-            onPressed: _selectedImages.isEmpty ? null : _generatePDF,
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            label: const Text('Generate PDF'),
-            heroTag: 'generate',
-          ),
-        ],
+      bottomNavigationBar: _ScanBottomControls(
+        hasImages: _selectedImages.isNotEmpty,
+        isProcessing: _isProcessing,
+        onAddImages: _showAddImageModal,
+        onGeneratePdf: _generatePDF,
       ),
       body: Stack(
         children: [
           SafeArea(
+            bottom: false,
             child: Column(
               children: [
                 Expanded(
@@ -109,31 +100,13 @@ class _ScanScreenState extends State<ScanScreen> {
                             });
                           },
                           onCrop: (index) => _cropImage(index),
+                          onEdit: (index) => _editImage(index),
                         ),
                 ),
-                if (_selectedImages.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          _FilterChip(label: 'Auto', onTap: () => _applyFilter(_AutoEnhanceFilter())),
-                          const SizedBox(width: 8),
-                          _FilterChip(label: 'Grayscale', onTap: () => _applyFilter(_GrayscaleFilter())),
-                          const SizedBox(width: 8),
-                          _FilterChip(label: 'B/W', onTap: () => _applyFilter(_ThresholdFilter(threshold: 128))),
-                          const SizedBox(width: 8),
-                          _FilterChip(label: 'Sharpen', onTap: () => _applyFilter(_SharpenFilter())),
-                        ],
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
-          if (_isProcessing)
-            _ProcessingOverlay(status: _processingStatus),
+          if (_isProcessing) _ProcessingOverlay(status: _processingStatus),
         ],
       ),
     );
@@ -142,8 +115,12 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<File?> _compressImage(File file, int quality) async {
     try {
       final dir = await getTemporaryDirectory();
-      final targetPath = path.join(dir.path, '${path.basenameWithoutExtension(file.path)}_compressed.jpg');
-      
+      final timestamp = DateTime.now().microsecondsSinceEpoch;
+      final targetPath = path.join(
+        dir.path,
+        '${path.basenameWithoutExtension(file.path)}_$timestamp.jpg',
+      );
+
       final result = await FlutterImageCompress.compressAndGetFile(
         file.path,
         targetPath,
@@ -160,20 +137,39 @@ class _ScanScreenState extends State<ScanScreen> {
 
   Future<void> _cropImage(int index) async {
     final imageFile = _selectedImages[index];
-    // Open freeform crop UI which returns a File path (new image)
-    final File? result = await Navigator.push<File?>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FreeformCropScreen(imageFile: imageFile),
-      ),
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: imageFile.path,
+      compressFormat: ImageCompressFormat.jpg,
+      compressQuality: 100,
+      uiSettings: [
+        IOSUiSettings(
+          title: 'Crop photo',
+          embedInNavigationController: true,
+        ),
+      ],
     );
 
-    if (result != null && mounted) {
-      final compressionLevel = context.read<SettingsProvider>().settings.compressionLevel;
-      final compressedFile = await _compressImage(result, compressionLevel.quality);
+    if (croppedFile != null && mounted) {
+      final compressionLevel =
+          ref.read(settingsProvider).settings.compressionLevel;
+      final compressedFile = await _compressImage(
+          File(croppedFile.path), compressionLevel.quality);
       if (compressedFile != null) {
         setState(() => _selectedImages[index] = compressedFile);
       }
+    }
+  }
+
+  Future<void> _editImage(int index) async {
+    final filteredFile = await Navigator.of(context).push<File>(
+      MaterialPageRoute(
+        builder: (_) =>
+            ImageFilterEditorScreen(imageFile: _selectedImages[index]),
+      ),
+    );
+
+    if (filteredFile != null && mounted) {
+      setState(() => _selectedImages[index] = filteredFile);
     }
   }
 
@@ -185,7 +181,8 @@ class _ScanScreenState extends State<ScanScreen> {
       ),
     );
     if (newImages != null && newImages.isNotEmpty && mounted) {
-      final compressionLevel = context.read<SettingsProvider>().settings.compressionLevel;
+      final compressionLevel =
+          ref.read(settingsProvider).settings.compressionLevel;
       for (final file in newImages) {
         final compressed = await _compressImage(file, compressionLevel.quality);
         if (compressed != null) {
@@ -225,13 +222,15 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (source != null && mounted) {
       final picker = ImagePicker();
-      final compressionLevel = context.read<SettingsProvider>().settings.compressionLevel;
+      final compressionLevel =
+          ref.read(settingsProvider).settings.compressionLevel;
 
       if (source == ImageSource.gallery) {
         final pickedFiles = await picker.pickMultiImage();
         if (pickedFiles.isNotEmpty && mounted) {
           for (final pickedFile in pickedFiles) {
-            final compressedFile = await _compressImage(File(pickedFile.path), compressionLevel.quality);
+            final compressedFile = await _compressImage(
+                File(pickedFile.path), compressionLevel.quality);
             if (compressedFile != null) {
               _selectedImages.add(compressedFile);
             }
@@ -241,7 +240,8 @@ class _ScanScreenState extends State<ScanScreen> {
       } else {
         final pickedFile = await picker.pickImage(source: source);
         if (pickedFile != null && mounted) {
-          final compressedFile = await _compressImage(File(pickedFile.path), compressionLevel.quality);
+          final compressedFile = await _compressImage(
+              File(pickedFile.path), compressionLevel.quality);
           if (compressedFile != null) {
             setState(() => _selectedImages.add(compressedFile));
           }
@@ -255,7 +255,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
     // Only show name dialog if user hasn't renamed the scan
     String? pdfName;
-    if (_scanName == 'New Scan') { // Check if default name is still present
+    if (_scanName == 'New Scan') {
+      // Check if default name is still present
       pdfName = await _showPdfNameDialog();
       if (pdfName == null || pdfName.isEmpty || !mounted) return;
     } else {
@@ -269,14 +270,12 @@ class _ScanScreenState extends State<ScanScreen> {
 
     try {
       final fileName = '$pdfName.pdf';
-      final settings = context.read<SettingsProvider>().settings;
       await _pdfService.createPdfFromImages(
         _selectedImages,
         fileName,
         pageSizeMode: _pageSizeMode,
-        settings: settings,
       );
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('PDF generated successfully!')),
@@ -294,33 +293,10 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  Future<void> _applyFilter(_ImageFilter filter) async {
-    if (_selectedImages.isEmpty) return;
-    setState(() => _isProcessing = true);
-    for (int i = 0; i < _selectedImages.length; i++) {
-      final file = _selectedImages[i];
-      final bytes = await file.readAsBytes();
-      final decoded = img.decodeImage(bytes);
-      if (decoded == null) continue;
-      final processed = filter.process(decoded);
-      final outBytes = img.encodeJpg(processed, quality: 95);
-      final out = await _writeTempImage(outBytes, baseName: path.basenameWithoutExtension(file.path));
-      _selectedImages[i] = out;
-    }
-    if (mounted) setState(() => _isProcessing = false);
-  }
-
-  Future<File> _writeTempImage(List<int> bytes, {required String baseName}) async {
-    final dir = await getTemporaryDirectory();
-    final outPath = path.join(dir.path, '${baseName}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-    final f = File(outPath);
-    await f.writeAsBytes(bytes);
-    return f;
-  }
-
   Future<String?> _showPdfNameDialog() async {
     final now = DateTime.now();
-    final defaultName = 'scan_${now.year}${now.month}${now.day}_${now.hour}${now.minute}';
+    final defaultName =
+        'scan_${now.year}${now.month}${now.day}_${now.hour}${now.minute}';
     final controller = TextEditingController(text: defaultName);
 
     return showDialog<String>(
@@ -365,8 +341,12 @@ class _ScanScreenState extends State<ScanScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Save')),
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(context, controller.text.trim()),
+                child: const Text('Save')),
           ],
         );
       },
@@ -385,52 +365,52 @@ class _ScanScreenState extends State<ScanScreen> {
           title: const Text('Choose Page Size'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-              children: [
-                RadioListTile<PageSizeMode>(
-                  title: Text(PageSizeMode.fit.displayName),
-                  value: PageSizeMode.fit,
-                  groupValue: _pageSizeMode,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _pageSizeMode = value);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-                RadioListTile<PageSizeMode>(
-                  title: Text(PageSizeMode.a4.displayName),
-                  value: PageSizeMode.a4,
-                  groupValue: _pageSizeMode,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _pageSizeMode = value);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-                RadioListTile<PageSizeMode>(
-                  title: Text(PageSizeMode.letter.displayName),
-                  value: PageSizeMode.letter,
-                  groupValue: _pageSizeMode,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _pageSizeMode = value);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-                RadioListTile<PageSizeMode>(
-                  title: Text(PageSizeMode.legal.displayName),
-                  value: PageSizeMode.legal,
-                  groupValue: _pageSizeMode,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _pageSizeMode = value);
-                      Navigator.pop(context);
-                    }
-                  },
-                ),
-              ],
+            children: [
+              RadioListTile<PageSizeMode>(
+                title: Text(PageSizeMode.fit.displayName),
+                value: PageSizeMode.fit,
+                groupValue: _pageSizeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _pageSizeMode = value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<PageSizeMode>(
+                title: Text(PageSizeMode.a4.displayName),
+                value: PageSizeMode.a4,
+                groupValue: _pageSizeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _pageSizeMode = value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<PageSizeMode>(
+                title: Text(PageSizeMode.letter.displayName),
+                value: PageSizeMode.letter,
+                groupValue: _pageSizeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _pageSizeMode = value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              RadioListTile<PageSizeMode>(
+                title: Text(PageSizeMode.legal.displayName),
+                value: PageSizeMode.legal,
+                groupValue: _pageSizeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _pageSizeMode = value);
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -440,6 +420,57 @@ class _ScanScreenState extends State<ScanScreen> {
           ],
         );
       },
+    );
+  }
+}
+
+class _ScanBottomControls extends StatelessWidget {
+  final bool hasImages;
+  final bool isProcessing;
+  final VoidCallback onAddImages;
+  final VoidCallback onGeneratePdf;
+
+  const _ScanBottomControls({
+    required this.hasImages,
+    required this.isProcessing,
+    required this.onAddImages,
+    required this.onGeneratePdf,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasImages) return const SizedBox.shrink();
+
+    return SafeArea(
+      top: false,
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: isProcessing ? null : onAddImages,
+                    icon: const Icon(Icons.add_photo_alternate_outlined),
+                    label: const Text('Add'),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: isProcessing ? null : onGeneratePdf,
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('Generate PDF'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -473,13 +504,19 @@ class _ImageGrid extends StatelessWidget {
   final void Function(int oldIndex, int newIndex) onReorder;
   final void Function(int index) onDelete;
   final void Function(int index) onCrop;
-  const _ImageGrid({required this.selectedImages, required this.onReorder, required this.onDelete, required this.onCrop});
+  final void Function(int index) onEdit;
+  const _ImageGrid(
+      {required this.selectedImages,
+      required this.onReorder,
+      required this.onDelete,
+      required this.onCrop,
+      required this.onEdit});
   @override
   Widget build(BuildContext context) {
     return ReorderableGridView.builder(
       itemCount: selectedImages.length,
       onReorder: onReorder,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+      padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 8,
@@ -496,6 +533,7 @@ class _ImageGrid extends StatelessWidget {
             onDelete: () => onDelete(index),
             onTap: () => onCrop(index),
             onCrop: () => onCrop(index),
+            onEdit: () => onEdit(index),
           ),
         );
       },
@@ -542,70 +580,5 @@ class _ScanEmptyState extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  const _FilterChip({required this.label, required this.onTap});
-  @override
-  Widget build(BuildContext context) {
-    return ActionChip(
-      label: Text(label),
-      onPressed: onTap,
-      avatar: const Icon(Icons.tune, size: 18),
-    );
-  }
-}
-
-abstract class _ImageFilter {
-  img.Image process(img.Image input);
-}
-
-class _GrayscaleFilter implements _ImageFilter {
-  @override
-  img.Image process(img.Image input) {
-    return img.grayscale(input.clone());
-  }
-}
-
-class _ThresholdFilter implements _ImageFilter {
-  final int threshold;
-  const _ThresholdFilter({required this.threshold});
-  @override
-  img.Image process(img.Image input) {
-    final out = img.grayscale(input.clone());
-    for (int y = 0; y < out.height; y++) {
-      for (int x = 0; x < out.width; x++) {
-        final px = out.getPixel(x, y);
-        final l = img.getLuminanceRgb(px.r, px.g, px.b);
-        final v = l >= threshold ? 255 : 0;
-        out.setPixelRgba(x, y, v, v, v, 255);
-      }
-    }
-    return out;
-  }
-}
-
-class _SharpenFilter implements _ImageFilter {
-  @override
-  img.Image process(img.Image input) {
-    // Fallback sharpen via convolution kernel
-    final kernel = <num>[
-      0, -1, 0,
-      -1, 5, -1,
-      0, -1, 0,
-    ];
-    return img.convolution(input.clone(), filter: kernel, div: 1, offset: 0);
-  }
-}
-
-class _AutoEnhanceFilter implements _ImageFilter {
-  @override
-  img.Image process(img.Image input) {
-    final out = input.clone();
-    img.adjustColor(out, contrast: 1.1, saturation: 1.05, brightness: 0.0, gamma: 1.0);
-    return out;
   }
 }
