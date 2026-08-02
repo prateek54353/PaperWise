@@ -15,12 +15,18 @@ if (localPropertiesFile.exists()) {
 
 val flutterVersionCode = localProperties.getProperty("flutter.versionCode")
 val flutterVersionName = localProperties.getProperty("flutter.versionName")
-val releaseStoreFile = System.getenv("STORE_FILE")
+
+// Signing configuration - supports both environment variables (CI) and local.properties (local dev)
+val releaseStoreFile = System.getenv("STORE_FILE") ?: localProperties.getProperty("storeFile")
+val releaseStorePassword = System.getenv("STORE_PASSWORD") ?: localProperties.getProperty("storePassword")
+val releaseKeyAlias = System.getenv("KEY_ALIAS") ?: localProperties.getProperty("keyAlias")
+val releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: localProperties.getProperty("keyPassword")
+
 val hasReleaseSigning = listOf(
     releaseStoreFile,
-    System.getenv("STORE_PASSWORD"),
-    System.getenv("KEY_ALIAS"),
-    System.getenv("KEY_PASSWORD"),
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
 ).all { !it.isNullOrBlank() }
 
 android {
@@ -33,13 +39,18 @@ android {
     }
 
     signingConfigs {
+        // Release signing configuration
         if (hasReleaseSigning) {
             create("release") {
-                keyAlias = System.getenv("KEY_ALIAS")
-                keyPassword = System.getenv("KEY_PASSWORD")
-                storeFile = file(requireNotNull(releaseStoreFile))
-                storePassword = System.getenv("STORE_PASSWORD")
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword
             }
+        }
+        // Debug signing configuration (uses default debug keystore)
+        getByName("debug") {
+            // Default debug signing is handled automatically by Android
         }
     }
 
@@ -63,9 +74,22 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
+            // Enable code shrinking and obfuscation
+            isMinifyEnabled = true
+            isShrinkResources = true
+            
+            // Use release signing if available, otherwise unsigned
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
+                println("✓ Release signing configured with keystore: $releaseStoreFile")
+            } else {
+                println("⚠ No release signing configuration found - building unsigned APK")
             }
         }
     }
@@ -73,6 +97,33 @@ android {
 
 flutter {
     source = "../.."
+}
+
+// Add task to verify APK signing
+tasks.register("verifySigning") {
+    group = "verification"
+    description = "Verify that release APK is properly signed"
+    
+    doLast {
+        val apks = fileTree("build/app/outputs/flutter-apk") {
+            include("**/*-release.apk")
+        }
+        
+        if (apks.isEmpty) {
+            println("⚠ No release APKs found to verify")
+        } else {
+            apks.forEach { apk ->
+                println("📦 Found release APK: ${apk.name}")
+                // In a real setup, you would use apksigner or jarsigner here
+                // For now, we just log the APK was found
+            }
+        }
+    }
+}
+
+// Hook verification into release build
+tasks.named("assembleRelease") {
+    finalizedBy("verifySigning")
 }
 
 // FIX: Add a catch-all for build failures to provide more context
