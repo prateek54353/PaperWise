@@ -121,10 +121,13 @@ tasks.register("verifySigning") {
     }
 }
 
-// Hook verification into release build
-tasks.named("assembleRelease") {
-    finalizedBy("verifySigning")
-}
+// Hook verification into release build only when the task exists.
+// Some Gradle configurations do not expose assembleRelease at configuration time,
+// so we should attach conditionally instead of failing the build.
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }
+    .configureEach {
+        finalizedBy("verifySigning")
+    }
 
 // FIX: Add a catch-all for build failures to provide more context
 // This is a common pattern to help diagnose Gradle issues.
