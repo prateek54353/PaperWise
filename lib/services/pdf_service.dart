@@ -9,6 +9,24 @@ import 'package:paperwise_pdf_maker/models/app_settings.dart';
 import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
 
 class PDFService {
+  static Future<void> clearDirectory(Directory directory) async {
+    if (!await directory.exists()) return;
+
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is File) {
+        await entity.delete();
+      } else if (entity is Directory) {
+        await clearDirectory(entity);
+        await entity.delete();
+      }
+    }
+  }
+
+  static Future<void> clearTemporaryDirectory() async {
+    final tempDir = await getTemporaryDirectory();
+    await clearDirectory(tempDir);
+  }
+
   /// Gets the default save directory for PDFs
   Future<String> getDefaultPdfDirectory() async {
     final documentsDir = await getApplicationDocumentsDirectory();

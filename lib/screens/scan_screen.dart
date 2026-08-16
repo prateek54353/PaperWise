@@ -275,6 +275,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         fileName,
         pageSizeMode: _pageSizeMode,
       );
+      await PDFService.clearTemporaryDirectory();
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as pp;
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
+import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 import '../models/pdf_model.dart';
 
 abstract class PdfDataSource {
@@ -57,6 +58,7 @@ class LocalPdfDataSource implements PdfDataSource {
       if (await file.exists()) {
         await file.delete();
       }
+      await PDFService.clearTemporaryDirectory();
     } catch (e) {
       throw Exception('Failed to delete PDF: $e');
     }
