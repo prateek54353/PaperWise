@@ -1,3 +1,4 @@
+import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
@@ -6,21 +7,59 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// ADDED: Logic to read properties from local.properties
+// -----------------------------------------------------------------------------
+// Flutter version information
+// -----------------------------------------------------------------------------
+
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
+
 if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.reader())
 }
 
-val flutterVersionCode = localProperties.getProperty("flutter.versionCode")
-val flutterVersionName = localProperties.getProperty("flutter.versionName")
+val flutterVersionCode =
+    localProperties.getProperty("flutter.versionCode")
 
-// Signing configuration - supports both environment variables (CI) and local.properties (local dev)
-val releaseStoreFile = System.getenv("STORE_FILE") ?: localProperties.getProperty("storeFile")
-val releaseStorePassword = System.getenv("STORE_PASSWORD") ?: localProperties.getProperty("storePassword")
-val releaseKeyAlias = System.getenv("KEY_ALIAS") ?: localProperties.getProperty("keyAlias")
-val releaseKeyPassword = System.getenv("KEY_PASSWORD") ?: localProperties.getProperty("keyPassword")
+val flutterVersionName =
+    localProperties.getProperty("flutter.versionName")
+
+// -----------------------------------------------------------------------------
+// Release signing
+//
+// Priority:
+// 1. Environment variables - useful for CI
+// 2. android/key.properties - useful for local builds
+// -----------------------------------------------------------------------------
+
+val keyProperties = Properties()
+val keyPropertiesFile = rootProject.file("key.properties")
+
+if (keyPropertiesFile.exists()) {
+    keyProperties.load(FileInputStream(keyPropertiesFile))
+}
+
+fun signingProperty(
+    environmentName: String,
+    propertyName: String,
+): String? {
+    return System.getenv(environmentName)
+        ?.takeIf { it.isNotBlank() }
+        ?: keyProperties.getProperty(propertyName)
+            ?.takeIf { it.isNotBlank() }
+}
+
+val releaseStoreFile =
+    signingProperty("STORE_FILE", "storeFile")
+
+val releaseStorePassword =
+    signingProperty("STORE_PASSWORD", "storePassword")
+
+val releaseKeyAlias =
+    signingProperty("KEY_ALIAS", "keyAlias")
+
+val releaseKeyPassword =
+    signingProperty("KEY_PASSWORD", "keyPassword")
 
 val hasReleaseSigning = listOf(
     releaseStoreFile,
@@ -29,8 +68,13 @@ val hasReleaseSigning = listOf(
     releaseKeyPassword,
 ).all { !it.isNullOrBlank() }
 
+// -----------------------------------------------------------------------------
+// Android configuration
+// -----------------------------------------------------------------------------
+
 android {
     namespace = "org.paperwise.app"
+
     compileSdk = 36
 
     dependenciesInfo {
@@ -38,21 +82,32 @@ android {
         includeInBundle = false
     }
 
+    // -------------------------------------------------------------------------
+    // Signing configurations
+    // -------------------------------------------------------------------------
+
     signingConfigs {
-        // Release signing configuration
         if (hasReleaseSigning) {
             create("release") {
                 keyAlias = releaseKeyAlias
                 keyPassword = releaseKeyPassword
-                storeFile = file(releaseStoreFile!!)
+
+                storeFile = releaseStoreFile?.let {
+                    file(it)
+                }
+
                 storePassword = releaseStorePassword
             }
         }
-        // Debug signing configuration (uses default debug keystore)
+
         getByName("debug") {
-            // Default debug signing is handled automatically by Android
+            // Android's default debug keystore.
         }
     }
+
+    // -------------------------------------------------------------------------
+    // Java / Kotlin
+    // -------------------------------------------------------------------------
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -63,85 +118,111 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    // -------------------------------------------------------------------------
+    // Default configuration
+    // -------------------------------------------------------------------------
+
     defaultConfig {
         applicationId = "org.paperwise.app"
+
         minSdk = flutter.minSdkVersion
         targetSdk = 35
 
-        // MODIFIED: Read version info from local.properties
-        versionCode = (flutterVersionCode ?: "1").toInt()
-        versionName = flutterVersionName ?: "1.0"
+        versionCode =
+            (flutterVersionCode ?: "1").toInt()
+
+        versionName =
+            flutterVersionName ?: "1.0"
     }
+
+    // -------------------------------------------------------------------------
+    // Build types
+    // -------------------------------------------------------------------------
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            signingConfig = signingConfigs.getByName("debug")
+
+            signingConfig =
+                signingConfigs.getByName("debug")
         }
+
         release {
-            // Enable code shrinking and obfuscation
             isMinifyEnabled = true
             isShrinkResources = true
-            
-            // Use release signing if available, otherwise unsigned
+
             if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("release")
-                println("✓ Release signing configured with keystore: $releaseStoreFile")
+                signingConfig =
+                    signingConfigs.getByName("release")
+
+                println(
+                    "✓ Release signing configured"
+                )
+
+                println(
+                    "✓ Keystore: $releaseStoreFile"
+                )
             } else {
-                println("⚠ No release signing configuration found - building unsigned APK")
+                println(
+                    "⚠ No release signing configuration found"
+                )
+
+                println(
+                    "⚠ Release APK will be unsigned"
+                )
             }
         }
     }
 }
+
+// -----------------------------------------------------------------------------
+// Flutter
+// -----------------------------------------------------------------------------
 
 flutter {
     source = "../.."
 }
 
-// Add task to verify APK signing
+// -----------------------------------------------------------------------------
+// APK signing verification
+// -----------------------------------------------------------------------------
+
 tasks.register("verifySigning") {
     group = "verification"
-    description = "Verify that release APK is properly signed"
-    
+
+    description =
+        "Verify that release APKs were generated."
+
     doLast {
-        val apks = fileTree("build/app/outputs/flutter-apk") {
+        val apkDirectory =
+            file("build/outputs/flutter-apk")
+
+        val apks = fileTree(apkDirectory) {
             include("**/*-release.apk")
         }
-        
+
         if (apks.isEmpty) {
-            println("⚠ No release APKs found to verify")
+            println(
+                "⚠ No release APKs found to verify"
+            )
         } else {
             apks.forEach { apk ->
-                println("📦 Found release APK: ${apk.name}")
-                // In a real setup, you would use apksigner or jarsigner here
-                // For now, we just log the APK was found
+                println(
+                    "📦 Release APK: ${apk.name}"
+                )
             }
         }
     }
 }
 
-// Hook verification into release build only when the task exists.
-// Some Gradle configurations do not expose assembleRelease at configuration time,
-// so we should attach conditionally instead of failing the build.
-tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }
-    .configureEach {
-        finalizedBy("verifySigning")
-    }
+// -----------------------------------------------------------------------------
+// Run verification after release builds
+// -----------------------------------------------------------------------------
 
-// FIX: Add a catch-all for build failures to provide more context
-// This is a common pattern to help diagnose Gradle issues.
-gradle.taskGraph.whenReady {
-    tasks.forEach { task ->
-        task.doLast {
-            if (task.state.failure != null) {
-                println("Error: Gradle task ${task.path} failed with exit code 1")
-                println("Try: > Run with --stacktrace option to get the stack trace.")
-                println("     > Run with --info or --debug option to get more log output.")
-                println("     > Run with --scan to get full insights.")
-                println("     > Get more help at https://help.gradle.org.")
-                println("Exited (1).")
-            }
-        }
-    }
+tasks.matching {
+    it.name == "assembleRelease" ||
+        it.name == "bundleRelease"
+}.configureEach {
+    finalizedBy("verifySigning")
 }
