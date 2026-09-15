@@ -4,7 +4,7 @@ class AppConstants {
 
   // App Info
   static const String appName = 'Paperwise';
-  static const String appVersion = '2.5.7';
+  static const String appVersion = '2.5.8';
 
   // Storage
   static const String pdfDirectoryName = 'Paperwise';
