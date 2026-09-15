@@ -75,7 +75,7 @@ val hasReleaseSigning = listOf(
 android {
     namespace = "org.paperwise.app"
 
-    compileSdk = 36
+    compileSdk = 35
 
     dependenciesInfo {
         includeInApk = false
