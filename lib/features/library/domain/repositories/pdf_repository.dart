@@ -2,7 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
 import '../entities/pdf_entity.dart';
 
-enum SortOption { date, name }
+enum SortOption { date, name, size, pageCount }
 
 abstract class PdfRepository {
   Future<Either<Failure, List<PdfEntity>>> loadPdfs();
@@ -13,4 +13,7 @@ abstract class PdfRepository {
   Future<Either<Failure, PdfEntity>> renamePdf(PdfEntity pdf, String newName);
   Future<Either<Failure, List<PdfEntity>>> searchPdfs(String query);
   Future<Either<Failure, List<PdfEntity>>> sortPdfs(List<PdfEntity> pdfs, SortOption option);
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName);
+  Future<Either<Failure, List<PdfEntity>>> splitPdf(PdfEntity pdf);
+  Future<Either<Failure, PdfEntity>> savePdfBytes(List<int> bytes, String name);
 }

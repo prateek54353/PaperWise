@@ -25,12 +25,16 @@ class ScanScreen extends ConsumerStatefulWidget {
 }
 
 class _ScanScreenState extends ConsumerState<ScanScreen> {
-  final List<File> _selectedImages = [];
+  List<File> _selectedImages = [];
   final PDFService _pdfService = PDFService();
   bool _isProcessing = false;
   String _processingStatus = '';
   PageSizeMode _pageSizeMode = PageSizeMode.fit;
   String _scanName = 'New Scan';
+  
+  // Undo/Redo support
+  final List<List<File>> _history = [];
+  int _historyIndex = -1;
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _pdfService.cleanupOldTempFiles(maxAge: settings.tempCleanupPeriod),
       );
     }
+    _saveState();
   }
 
   @override
@@ -53,6 +58,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.undo),
+            tooltip: 'Undo',
+            onPressed: _canUndo ? _undo : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo),
+            tooltip: 'Redo',
+            onPressed: _canRedo ? _redo : null,
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Rename scan',
@@ -93,11 +108,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                               final item = _selectedImages.removeAt(oldIndex);
                               _selectedImages.insert(newIndex, item);
                             });
+                            _saveState();
                           },
                           onDelete: (index) {
                             setState(() {
                               _selectedImages.removeAt(index);
                             });
+                            _saveState();
                           },
                           onCrop: (index) => _cropImage(index),
                           onEdit: (index) => _editImage(index),
@@ -156,6 +173,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           File(croppedFile.path), compressionLevel.quality);
       if (compressedFile != null) {
         setState(() => _selectedImages[index] = compressedFile);
+        _saveState();
       }
     }
   }
@@ -170,6 +188,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     if (filteredFile != null && mounted) {
       setState(() => _selectedImages[index] = filteredFile);
+      _saveState();
     }
   }
 
@@ -190,6 +209,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         }
       }
       setState(() {});
+      _saveState();
     }
   }
 
@@ -236,6 +256,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             }
           }
           setState(() {});
+          _saveState();
         }
       } else {
         final pickedFile = await picker.pickImage(source: source);
@@ -243,8 +264,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           final compressedFile = await _compressImage(
               File(pickedFile.path), compressionLevel.quality);
           if (compressedFile != null) {
-            setState(() => _selectedImages.add(compressedFile));
+            _selectedImages.add(compressedFile);
           }
+          setState(() {});
+          _saveState();
         }
       }
     }
@@ -422,6 +445,38 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       },
     );
   }
+
+  // Undo/Redo methods
+  void _saveState() {
+    // Remove any future states if we're not at the end
+    if (_historyIndex < _history.length - 1) {
+      _history.removeRange(_historyIndex + 1, _history.length);
+    }
+    // Save current state
+    _history.add(List<File>.from(_selectedImages));
+    _historyIndex = _history.length - 1;
+  }
+
+  void _undo() {
+    if (_historyIndex > 0) {
+      _historyIndex--;
+      setState(() {
+        _selectedImages = List<File>.from(_history[_historyIndex]);
+      });
+    }
+  }
+
+  void _redo() {
+    if (_historyIndex < _history.length - 1) {
+      _historyIndex++;
+      setState(() {
+        _selectedImages = List<File>.from(_history[_historyIndex]);
+      });
+    }
+  }
+
+  bool get _canUndo => _historyIndex > 0;
+  bool get _canRedo => _historyIndex < _history.length - 1;
 }
 
 class _ScanBottomControls extends StatelessWidget {

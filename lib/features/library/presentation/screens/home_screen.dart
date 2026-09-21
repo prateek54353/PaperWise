@@ -3,8 +3,11 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
+import 'package:paperwise_pdf_maker/features/library/domain/repositories/pdf_repository.dart' show SortOption;
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_viewer_screen.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_split_screen.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_merge_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/widgets/pdf_list_item.dart';
 import 'package:paperwise_pdf_maker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:path/path.dart' as path;
@@ -164,6 +167,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     await ref.read(libraryProvider.notifier).shareSelectedPdfs();
   }
 
+  Future<void> _mergeSelectedPDFs() async {
+    final selectedCount = ref.read(libraryProvider).selectedCount;
+    if (selectedCount < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least 2 PDFs to merge')),
+      );
+      return;
+    }
+
+    final selectedPdfs = ref.read(libraryProvider).selectedPdfs;
+    
+    // Clear selection mode before navigating to merge screen
+    ref.read(libraryProvider.notifier).clearSelection();
+    
+    // Navigate to the new merge screen
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PdfMergeScreen(pdfs: selectedPdfs),
+        ),
+      );
+    }
+  }
+
+  Future<void> _splitPdf(PdfEntity pdf) async {
+    if (pdf.pageCount <= 1) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cannot split single-page PDF')),
+        );
+      }
+      return;
+    }
+
+    // Navigate to the new split screen (original PDF will NOT be deleted)
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PdfSplitScreen(pdf: pdf),
+        ),
+      );
+    }
+  }
+
+  void _showSortDialog() {
+    final currentSort = ref.read(libraryProvider).sortOption;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sort By'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<SortOption>(
+              title: const Text('Date'),
+              subtitle: const Text('Newest first'),
+              value: SortOption.date,
+              groupValue: currentSort,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(libraryProvider.notifier).setSortOption(value);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: const Text('Name'),
+              subtitle: const Text('Alphabetical'),
+              value: SortOption.name,
+              groupValue: currentSort,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(libraryProvider.notifier).setSortOption(value);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: const Text('Size'),
+              subtitle: const Text('Largest first'),
+              value: SortOption.size,
+              groupValue: currentSort,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(libraryProvider.notifier).setSortOption(value);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            RadioListTile<SortOption>(
+              title: const Text('Page Count'),
+              subtitle: const Text('Most pages first'),
+              value: SortOption.pageCount,
+              groupValue: currentSort,
+              onChanged: (value) {
+                if (value != null) {
+                  ref.read(libraryProvider.notifier).setSortOption(value);
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final libraryState = ref.watch(libraryProvider);
@@ -176,6 +288,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         actions: isSelectionMode
             ? [
                 IconButton(
+                  icon: const Icon(Icons.merge),
+                  tooltip: 'Merge Selected',
+                  onPressed: _mergeSelectedPDFs,
+                ),
+                IconButton(
                   icon: const Icon(Icons.share),
                   tooltip: 'Share Selected',
                   onPressed: _shareSelectedPDFs,
@@ -187,6 +304,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ]
             : [
+                IconButton(
+                  icon: const Icon(Icons.sort),
+                  tooltip: 'Sort',
+                  onPressed: _showSortDialog,
+                ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   tooltip: 'Settings',
@@ -223,6 +345,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     onDelete: _deletePDF,
                     onRename: _renamePdf,
                     onShare: _sharePdf,
+                    onSplit: _splitPdf,
                   ),
       ),
     );
@@ -274,6 +397,7 @@ class _PdfListView extends StatelessWidget {
   final void Function(PdfEntity pdf) onDelete;
   final void Function(PdfEntity pdf) onRename;
   final void Function(PdfEntity pdf) onShare;
+  final void Function(PdfEntity pdf) onSplit;
 
   const _PdfListView({
     required this.pdfs,
@@ -281,6 +405,7 @@ class _PdfListView extends StatelessWidget {
     required this.onDelete,
     required this.onRename,
     required this.onShare,
+    required this.onSplit,
   });
 
   @override
@@ -298,6 +423,7 @@ class _PdfListView extends StatelessWidget {
             onDelete: () => onDelete(pdf),
             onRename: () => onRename(pdf),
             onShare: () => onShare(pdf),
+            onSplit: () => onSplit(pdf),
           )
               .animate()
               .fadeIn(duration: 300.ms, delay: (100 * index).ms)

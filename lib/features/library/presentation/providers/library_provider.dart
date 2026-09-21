@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dartz/dartz.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
 import 'package:paperwise_pdf_maker/features/library/application/library_facade.dart';
 import 'package:paperwise_pdf_maker/features/library/data/datasources/local_pdf_datasource.dart';
@@ -31,10 +32,19 @@ class LibraryState {
       return pdf.name.toLowerCase().contains(searchQuery.toLowerCase());
     }).toList();
 
-    if (sortOption == SortOption.name) {
-      filtered.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    } else {
-      filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+    switch (sortOption) {
+      case SortOption.name:
+        filtered.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        break;
+      case SortOption.date:
+        filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+        break;
+      case SortOption.size:
+        filtered.sort((a, b) => b.size.compareTo(a.size));
+        break;
+      case SortOption.pageCount:
+        filtered.sort((a, b) => b.pageCount.compareTo(a.pageCount));
+        break;
     }
 
     return filtered;
@@ -192,6 +202,77 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  Future<Either<Failure, PdfEntity>> mergeSelectedPdfs(String outputName) async {
+    final selected = state.selectedPdfs;
+    if (selected.isEmpty) return const Left(PdfFailure('No PDFs selected'));
+
+    state = state.copyWith(isLoading: true);
+    final result = await facade.mergePdfs(selected, outputName);
+    result.fold(
+      (failure) => state = state.copyWith(isLoading: false, error: failure),
+      (mergedPdf) {
+        final updatedPdfs = List<PdfEntity>.from(state.pdfs);
+        updatedPdfs.add(mergedPdf);
+        state = state.copyWith(
+          isLoading: false,
+          pdfs: updatedPdfs,
+          selectedPdfPaths: {},
+          isSelectionMode: false,
+        );
+      },
+    );
+    return result;
+  }
+
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName) async {
+    if (pdfs.isEmpty) return const Left(PdfFailure('No PDFs to merge'));
+
+    state = state.copyWith(isLoading: true);
+    final result = await facade.mergePdfs(pdfs, outputName);
+    result.fold(
+      (failure) => state = state.copyWith(isLoading: false, error: failure),
+      (mergedPdf) {
+        final updatedPdfs = List<PdfEntity>.from(state.pdfs);
+        updatedPdfs.add(mergedPdf);
+        state = state.copyWith(
+          isLoading: false,
+          pdfs: updatedPdfs,
+          selectedPdfPaths: {},
+          isSelectionMode: false,
+        );
+      },
+    );
+    return result;
+  }
+
+  Future<Either<Failure, List<PdfEntity>>> splitPdf(PdfEntity pdf) async {
+    state = state.copyWith(isLoading: true);
+    final result = await facade.splitPdf(pdf);
+    result.fold(
+      (failure) => state = state.copyWith(isLoading: false, error: failure),
+      (splitPdfs) {
+        final updatedPdfs = List<PdfEntity>.from(state.pdfs);
+        updatedPdfs.addAll(splitPdfs);
+        state = state.copyWith(isLoading: false, pdfs: updatedPdfs);
+      },
+    );
+    return result;
+  }
+
+  Future<Either<Failure, PdfEntity>> savePdfBytes(List<int> bytes, String name) async {
+    state = state.copyWith(isLoading: true);
+    final result = await facade.savePdfBytes(bytes, name);
+    result.fold(
+      (failure) => state = state.copyWith(isLoading: false, error: failure),
+      (pdfEntity) {
+        final updatedPdfs = List<PdfEntity>.from(state.pdfs);
+        updatedPdfs.add(pdfEntity);
+        state = state.copyWith(isLoading: false, pdfs: updatedPdfs);
+      },
+    );
+    return result;
   }
 }
 

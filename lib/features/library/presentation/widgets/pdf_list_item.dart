@@ -10,6 +10,7 @@ class PdfListItem extends ConsumerWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback? onSplit;
 
   const PdfListItem({
     super.key,
@@ -18,6 +19,7 @@ class PdfListItem extends ConsumerWidget {
     required this.onRename,
     required this.onDelete,
     required this.onShare,
+    this.onSplit,
   });
 
   @override
@@ -94,11 +96,22 @@ class PdfListItem extends ConsumerWidget {
                         DateFormat('MMM d, y • h:mm a').format(pdf.modifiedAt),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      Text(
-                        _formatFileSize(pdf.size),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.secondary,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            _formatFileSize(pdf.size),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${pdf.pageCount} ${pdf.pageCount == 1 ? 'page' : 'pages'}',
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: colorScheme.secondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -110,6 +123,17 @@ class PdfListItem extends ConsumerWidget {
                             color: colorScheme.onSurfaceVariant,
                           ),
                           itemBuilder: (context) => [
+                            if (onSplit != null)
+                              PopupMenuItem(
+                                value: 'split',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.call_split, color: colorScheme.primary),
+                                    const SizedBox(width: 8),
+                                    Text('Split', style: TextStyle(color: colorScheme.primary)),
+                                  ],
+                                ),
+                              ),
                             PopupMenuItem(
                               value: 'rename',
                               child: Row(
@@ -143,6 +167,9 @@ class PdfListItem extends ConsumerWidget {
                           ],
                           onSelected: (value) {
                             switch (value) {
+                              case 'split':
+                                onSplit?.call();
+                                break;
                               case 'rename':
                                 onRename();
                                 break;

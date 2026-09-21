@@ -58,5 +58,24 @@ class LibraryFacade {
   Future<Either<Failure, List<PdfEntity>>> sortPdfs(List<PdfEntity> pdfs, SortOption option) async {
     return await repository.sortPdfs(pdfs, option);
   }
+
+  /// Merge multiple PDFs into one
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName) async {
+    try {
+      return await repository.mergePdfs(pdfs, outputName);
+    } catch (e) {
+      return Left(PdfFailure('Merge failed: $e'));
+    }
+  }
+
+  /// Split a PDF into individual pages
+  Future<Either<Failure, List<PdfEntity>>> splitPdf(PdfEntity pdf) async {
+    return await repository.splitPdf(pdf);
+  }
+
+  /// Save PDF bytes as a new PDF
+  Future<Either<Failure, PdfEntity>> savePdfBytes(List<int> bytes, String name) async {
+    return await repository.savePdfBytes(bytes, name);
+  }
 }
 

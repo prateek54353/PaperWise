@@ -9,6 +9,7 @@ abstract class PdfDataSource {
   Future<void> deletePdf(String pdfPath);
   Future<String> downloadPdf(String pdfPath);
   Future<String> renamePdf(String pdfPath, String newName);
+  Future<String> savePdfBytes(List<int> bytes, String fileName);
 }
 
 class LocalPdfDataSource implements PdfDataSource {
@@ -35,12 +36,14 @@ class LocalPdfDataSource implements PdfDataSource {
 
       final pdfs = await Future.wait(files.map((file) async {
         final stat = await file.stat();
+        final pageCount = await PdfModel.getPageCount(file.path);
         return PdfModel(
           path: file.path,
           name: path.basename(file.path),
           createdAt: stat.modified,
           modifiedAt: stat.modified,
           size: stat.size,
+          pageCount: pageCount,
         );
       }));
       pdfs.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
@@ -96,6 +99,35 @@ class LocalPdfDataSource implements PdfDataSource {
       return newFile.path;
     } catch (e) {
       throw Exception('Failed to rename PDF: $e');
+    }
+  }
+
+  @override
+  Future<String> savePdfBytes(List<int> bytes, String fileName) async {
+    try {
+      if (bytes.isEmpty) {
+        throw Exception('Cannot save empty PDF bytes');
+      }
+      
+      final documentsDir = await pp.getApplicationDocumentsDirectory();
+      final pdfDir = Directory(path.join(documentsDir.path,
+          AppConstants.pdfDirectoryName, AppConstants.pdfSubdirectory));
+
+      if (!await pdfDir.exists()) {
+        await pdfDir.create(recursive: true);
+      }
+
+      final sanitizedFileName = fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+      final file = File(path.join(pdfDir.path, sanitizedFileName));
+      await file.writeAsBytes(bytes);
+      
+      if (!await file.exists()) {
+        throw Exception('Failed to create PDF file');
+      }
+      
+      return file.path;
+    } catch (e) {
+      throw Exception('Failed to save PDF: $e');
     }
   }
 }
