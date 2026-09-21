@@ -1,7 +1,7 @@
 name: paperwise_pdf_maker
 description: A FOSS PDF maker app that converts images to PDF.
 publish_to: 'none'
-version: 2.6.0+2012
+version: 2.6.1+2013
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
