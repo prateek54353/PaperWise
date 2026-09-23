@@ -57,8 +57,8 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
   }
 
   Offset _imagePoint(Offset p, Rect r) => Offset(
-    ((p.dx - r.left - _pan.dx) / (_zoom * r.width)).clamp(0.0, 1.0),
-    ((p.dy - r.top - _pan.dy) / (_zoom * r.height)).clamp(0.0, 1.0),
+    ((p.dx - r.left - _pan.dx) / (_zoom * r.width)).clamp(0.0, 1.0).toDouble(),
+    ((p.dy - r.top - _pan.dy) / (_zoom * r.height)).clamp(0.0, 1.0).toDouble(),
   );
 
   void _start(ScaleStartDetails d, Rect r) {
@@ -78,7 +78,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
       setState(() => _points[_corner!] = _imagePoint(d.localFocalPoint, r));
     } else {
       setState(() {
-        _zoom = (_startZoom * d.scale).clamp(1.0, 5.0);
+        _zoom = (_startZoom * d.scale).clamp(1.0, 5.0).toDouble();
         _pan += d.localFocalPoint - _last;
         _last = d.localFocalPoint;
       });
@@ -233,16 +233,16 @@ Uint8List _warp(_Crop crop) {
   final q = crop.points.map((v) => Offset(v[0], v[1])).toList();
   final corners = q.map((p) => Offset(p.dx * src.width, p.dy * src.height)).toList();
   int dist(int a, int b) => (corners[a] - corners[b]).distance.round();
-  final w = ((dist(0, 1) + dist(3, 2)) / 2).round().clamp(1, src.width * 2);
-  final h = ((dist(0, 3) + dist(1, 2)) / 2).round().clamp(1, src.height * 2);
+  final w = ((dist(0, 1) + dist(3, 2)) / 2).round().clamp(1, src.width * 2).toInt();
+  final h = ((dist(0, 3) + dist(1, 2)) / 2).round().clamp(1, src.height * 2).toInt();
   final hmat = _solve(q);
   final out = img.Image(width: w, height: h, numChannels: 3);
   for (var y = 0; y < h; y++) {
     for (var x = 0; x < w; x++) {
       final u = x / (w - 1 == 0 ? 1 : w - 1), v = y / (h - 1 == 0 ? 1 : h - 1);
       final den = hmat[6] * u + hmat[7] * v + 1;
-      final sx = ((hmat[0] * u + hmat[1] * v + hmat[2]) / den * (src.width - 1)).round().clamp(0, src.width - 1);
-      final sy = ((hmat[3] * u + hmat[4] * v + hmat[5]) / den * (src.height - 1)).round().clamp(0, src.height - 1);
+      final sx = ((hmat[0] * u + hmat[1] * v + hmat[2]) / den * (src.width - 1)).round().clamp(0, src.width - 1).toInt();
+      final sy = ((hmat[3] * u + hmat[4] * v + hmat[5]) / den * (src.height - 1)).round().clamp(0, src.height - 1).toInt();
       final px = src.getPixel(sx, sy);
       out.setPixelRgba(x, y, px.r, px.g, px.b, 255);
     }
