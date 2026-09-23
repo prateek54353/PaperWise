@@ -13,6 +13,7 @@ import 'package:paperwise_pdf_maker/features/settings/presentation/providers/set
 import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
 import 'package:paperwise_pdf_maker/screens/tools/camera_scan_screen.dart';
 import 'package:paperwise_pdf_maker/screens/tools/image_filter_editor_screen.dart';
+import 'package:paperwise_pdf_maker/screens/tools/freeform_crop_screen.dart';
 import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 import 'package:paperwise_pdf_maker/widgets/image_preview_card.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
@@ -136,25 +137,59 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   Future<void> _cropImage(int index) async {
-    final imageFile = _selectedImages[index];
-    final croppedFile = await ImageCropper().cropImage(
-      sourcePath: imageFile.path,
-      compressFormat: ImageCompressFormat.jpg,
-      compressQuality: 100,
-      uiSettings: [
-        IOSUiSettings(
-          title: 'Crop photo',
-          embedInNavigationController: true,
+    final mode = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.crop_free),
+              title: const Text('Freeform crop'),
+              subtitle: const Text('Adjust all four document corners'),
+              onTap: () => Navigator.pop(context, 'freeform'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.crop),
+              title: const Text('System cropper'),
+              subtitle: const Text('Use the device crop interface'),
+              onTap: () => Navigator.pop(context, 'system'),
+            ),
+          ],
         ),
-      ],
+      ),
     );
+    if (mode == null || !mounted) return;
 
-    if (croppedFile != null && mounted) {
+    File? result;
+    if (mode == 'freeform') {
+      result = await Navigator.of(context).push<File>(
+        MaterialPageRoute(
+          builder: (_) => FreeformCropScreen(imageFile: _selectedImages[index]),
+        ),
+      );
+    } else {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: _selectedImages[index].path,
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 100,
+        uiSettings: [
+          IOSUiSettings(
+            title: 'Crop photo',
+            embedInNavigationController: true,
+          ),
+        ],
+      );
+      if (croppedFile != null) result = File(croppedFile.path);
+    }
+
+    if (result != null && mounted) {
       final compressionLevel =
           ref.read(settingsProvider).settings.compressionLevel;
-      final compressedFile = await _compressImage(
-          File(croppedFile.path), compressionLevel.quality);
-      if (compressedFile != null) {
+      final compressedFile =
+          await _compressImage(result, compressionLevel.quality);
+      if (compressedFile != null && mounted) {
         setState(() => _selectedImages[index] = compressedFile);
       }
     }
