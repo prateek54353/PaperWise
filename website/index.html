@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PaperWise - A private, open-source document scanner and PDF toolkit for Android">
+    <title>PaperWise - Open Source Document Scanner & PDF Toolkit</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+    <script src="js/github-api.js" defer></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <a href="index.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none;">
+                    <img src="images/icon.png" alt="PaperWise Logo" class="nav-logo">
+                    <span class="nav-title">PaperWise</span>
+                </a>
+            </div>
+            <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#screenshots">Screenshots</a></li>
+                <li><a href="#download">Download</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="privacy.html">Privacy</a></li>
+                <li><a href="https://github.com/prateek54353/PaperWise" target="_blank">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                    GitHub
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-text" id="hero-badge-text">🚀 Loading...</span>
+                </div>
+                <img src="images/icon.png" alt="PaperWise Logo" class="hero-logo">
+                <h1 class="hero-title">PaperWise</h1>
+                <p class="hero-subtitle">A private, open-source document scanner and PDF toolkit for Android</p>
+                <div class="hero-description">
+                    <p>Transform your smartphone into a powerful document scanner. Create, edit, merge, and manage PDFs with complete privacy - no ads, no trackers, no cloud storage.</p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Private</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">0</div>
+                        <div class="stat-label">Ads</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">MIT</div>
+                        <div class="stat-label">License</div>
+                    </div>
+                </div>
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                        </svg>
+                        Download Now
+                    </a>
+                    <a href="https://github.com/prateek54353/PaperWise" target="_blank" class="btn btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Powerful Features</h2>
+                <p class="section-subtitle">Everything you need to digitize, organize, and share your documents</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">📷</div>
+                    <h3>Smart Document Scanning</h3>
+                    <p>Capture documents directly using your camera or import multiple images at once from your gallery. Advanced edge detection and auto-enhancement ensure crisp, clear scans every time.</p>
+                    <ul class="feature-list">
+                        <li>Auto-edge detection</li>
+                        <li>Batch image import</li>
+                        <li>Auto-enhancement filters</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✏️</div>
+                    <h3>Advanced Editing Tools</h3>
+                    <p>Reorder, crop, rotate, and apply filters to your pages before exporting. Complete undo/redo history controls let you experiment freely without losing your work.</p>
+                    <ul class="feature-list">
+                        <li>Crop & rotate pages</li>
+                        <li>Color filters & adjustments</li>
+                        <li>Full undo/redo history</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📄</div>
+                    <h3>Professional PDF Creation</h3>
+                    <p>Create high-quality PDFs with customizable page sizes (A4, Letter, Legal, or Fit to Image). Adjust compression levels to balance quality and file size for your specific needs.</p>
+                    <ul class="feature-list">
+                        <li>Multiple page sizes</li>
+                        <li>Adjustable compression</li>
+                        <li>High-quality output</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔀</div>
+                    <h3>PDF Merge & Split</h3>
+                    <p>Merge multiple PDFs with intuitive drag-to-reorder interface and preview thumbnails. Split PDFs from a visual page selector - extract specific pages or export all pages separately.</p>
+                    <ul class="feature-list">
+                        <li>Drag-to-reorder merging</li>
+                        <li>Visual page selector</li>
+                        <li>Batch export options</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Smart Document Management</h3>
+                    <p>Organize your PDFs with powerful sorting options by date, name, size, or page count. Quick actions let you merge, share, or delete documents with long-press convenience.</p>
+                    <ul class="feature-list">
+                        <li>Multiple sort options</li>
+                        <li>Quick actions menu</li>
+                        <li>Bulk operations</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎨</div>
+                    <h3>Beautiful Themes</h3>
+                    <p>Choose from Light, Dark, and AMOLED Black themes. The app automatically switches based on your system preferences for a seamless experience day and night.</p>
+                    <ul class="feature-list">
+                        <li>Light, Dark, AMOLED themes</li>
+                        <li>Auto theme switching</li>
+                        <li>Material Design 3</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>Privacy First Architecture</h3>
+                    <p>Your documents never leave your device without your explicit action. No ads, no trackers, no unnecessary permissions. Complete control over your data.</p>
+                    <ul class="feature-list">
+                        <li>100% offline processing</li>
+                        <li>No ads or trackers</li>
+                        <li>Minimal permissions</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔓</div>
+                    <h3>Open Source & Transparent</h3>
+                    <p>Fully open source under MIT License. Review the code, contribute improvements, or fork the project. Transparency builds trust - see exactly how your data is handled.</p>
+                    <ul class="feature-list">
+                        <li>MIT License</li>
+                        <li>Public source code</li>
+                        <li>Community driven</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots Section -->
+    <section id="screenshots" class="screenshots">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">App Screenshots</h2>
+                <p class="section-subtitle">See PaperWise in action</p>
+            </div>
+            <div class="screenshots-container">
+                <div class="screenshot-wrapper">
+                    <img src="images/screenshot1.jpg" alt="PaperWise Scan Screen" class="screenshot">
+                    <div class="screenshot-caption">Document Scanning</div>
+                </div>
+                <div class="screenshot-wrapper">
+                    <img src="images/screenshot2.jpg" alt="PaperWise Editing Screen" class="screenshot">
+                    <div class="screenshot-caption">PDF Editing</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Download PaperWise</h2>
+                <p class="section-subtitle">Get the latest version for your Android device</p>
+            </div>
+            <div class="download-options">
+                <div class="download-primary">
+                    <div class="download-recommended">
+                        <span class="recommended-badge">Recommended</span>
+                    </div>
+                    <a href="https://apt.izzysoft.de/packages/org.paperwise.app/" target="_blank" class="download-card featured">
+                        <div class="download-logo">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                            </svg>
+                        </div>
+                        <h3>IzzyOnDroid F-Droid Repository</h3>
+                        <p>Automatic updates, verified builds, and easy installation through F-Droid client</p>
+                        <div class="download-features">
+                            <span class="feature-tag">✓ Auto Updates</span>
+                            <span class="feature-tag">✓ Verified</span>
+                            <span class="feature-tag">✓ Easy Install</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="download-secondary">
+                    <a href="https://github.com/prateek54353/PaperWise/releases" target="_blank" class="download-card">
+                        <div class="download-logo">
+                            <svg width="60" height="60" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </div>
+                        <h3>GitHub Releases</h3>
+                        <p>Download APK directly from GitHub. Choose the right version for your device architecture.</p>
+                        <div class="download-features">
+                            <span class="feature-tag">✓ Direct Download</span>
+                            <span class="feature-tag">✓ Multiple Architectures</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="version-info" id="version-info">
+                <div class="loading-placeholder">Loading version information...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">What Users Say</h2>
+                <p class="section-subtitle">Join thousands of users who trust PaperWise for their document needs</p>
+            </div>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Finally, a document scanner that respects my privacy! No ads, no tracking, just clean functionality. PaperWise has become my go-to app for scanning receipts and documents."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-info">
+                            <div class="author-name">Privacy-Conscious User</div>
+                            <div class="author-role">Business Professional</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"The PDF merge and split features are incredible. I can combine multiple documents into one PDF in seconds. The interface is intuitive and the Material Design 3 looks beautiful."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-info">
+                            <div class="author-name">Student User</div>
+                            <div class="author-role">Academic Research</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"As a developer, I appreciate that PaperWise is open source. I can review the code and trust that my documents aren't being mined for data. The app is fast, reliable, and does exactly what it promises."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-info">
+                            <div class="author-name">Tech Enthusiast</div>
+                            <div class="author-role">Software Developer</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Frequently Asked Questions</h2>
+                <p class="section-subtitle">Find answers to common questions about PaperWise</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Is PaperWise really free?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Yes! PaperWise is completely free and open source. There are no premium features, subscriptions, or hidden costs. The app is funded entirely through voluntary user support.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Does PaperWise require internet connection?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>No, PaperWise works completely offline. All document processing, PDF creation, and file management happen locally on your device. Internet is only needed for downloading updates or accessing external links.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>What permissions does PaperWise need?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>PaperWise only requests essential permissions: Camera (for scanning), Storage (for saving documents), and Internet (for update checks). No location, contacts, or other invasive permissions are required.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Can I use PaperWise for commercial purposes?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Absolutely! PaperWise is released under the MIT License, which allows for both personal and commercial use. You can use it for business documents, client work, or any commercial application without restrictions.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>How do I get updates for PaperWise?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>For automatic updates, install PaperWise through IzzyOnDroid F-Droid repository. If you downloaded from GitHub, you'll need to manually check for new releases and download the updated APK.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>Is my data safe with PaperWise?</h3>
+                        <span class="faq-toggle">+</span>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Your data is completely safe with PaperWise. All files are stored locally on your device and are never uploaded to external servers unless you explicitly share them. The app is open source, so you can verify the code yourself.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Version History Section -->
+    <section class="version-history">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Recent Updates</h2>
+                <p class="section-subtitle">What's new in PaperWise</p>
+            </div>
+            <div class="timeline" id="version-timeline">
+                <div class="loading-placeholder">Loading recent updates...</div>
+                <!-- Dynamic releases will be added here by JavaScript -->
+            </div>
+            <div class="version-history-footer">
+                <a href="https://github.com/prateek54353/PaperWise/releases" target="_blank" class="btn btn-secondary">
+                    View Full Changelog
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support Section -->
+    <section class="support">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Support PaperWise Development</h2>
+                <p class="section-subtitle">Help keep PaperWise free and open source</p>
+            </div>
+            <div class="support-content">
+                <div class="support-text-extended">
+                    <p>PaperWise is developed and maintained as a free, open-source project. Your support helps cover development costs, server expenses, and motivates continued improvements.</p>
+                    <p>Every contribution, no matter the size, makes a difference in keeping this project alive and accessible to everyone.</p>
+                </div>
+                <div class="support-actions">
+                    <a href="https://coff.ee/prateek.aish" target="_blank" class="btn btn-primary support-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z"/>
+                        </svg>
+                        Buy me a coffee
+                    </a>
+                    <a href="https://github.com/prateek54353/PaperWise" target="_blank" class="btn btn-secondary support-btn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        Star on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="images/icon.png" alt="PaperWise Logo" class="footer-logo">
+                    <div class="footer-brand-text">
+                        <span class="footer-title">PaperWise</span>
+                        <p class="footer-tagline">Private document scanning for everyone</p>
+                    </div>
+                </div>
+                <div class="footer-sections">
+                    <div class="footer-section">
+                        <h4>Product</h4>
+                        <ul>
+                            <li><a href="#features">Features</a></li>
+                            <li><a href="#screenshots">Screenshots</a></li>
+                            <li><a href="#download">Download</a></li>
+                            <li><a href="#faq">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Resources</h4>
+                        <ul>
+                            <li><a href="https://github.com/prateek54353/PaperWise" target="_blank">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                GitHub Repository
+                            </a></li>
+                            <li><a href="https://github.com/prateek54353/PaperWise/releases" target="_blank">Release Notes</a></li>
+                            <li><a href="https://github.com/prateek54353/PaperWise/issues" target="_blank">Report Issues</a></li>
+                            <li><a href="https://github.com/prateek54353/PaperWise/blob/main/LICENSE" target="_blank">MIT License</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Legal</h4>
+                        <ul>
+                            <li><a href="privacy.html">Privacy Policy</a></li>
+                            <li><a href="https://github.com/prateek54353/PaperWise/blob/main/LICENSE" target="_blank">Terms of Use</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4>Connect</h4>
+                        <ul>
+                            <li><a href="https://github.com/prateek54353/PaperWise" target="_blank">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                GitHub
+                            </a></li>
+                            <li><a href="https://coff.ee/prateek.aish" target="_blank">Support Development</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <div class="footer-bottom-content">
+                    <p>&copy; 2024 PaperWise. Built with Flutter. Licensed under MIT License.</p>
+                    <div class="footer-bottom-links">
+                        <a href="https://github.com/prateek54353/PaperWise" target="_blank">Source Code</a>
+                        <a href="privacy.html">Privacy</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
