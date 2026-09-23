@@ -3,7 +3,7 @@ const GITHUB_REPO = 'prateek54353/PaperWise';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 
 // Discord Server Configuration
-const DISCORD_INVITE_URL = 'https://discord.gg/UrUwVzvUr';
+const DISCORD_INVITE_URL = 'https://discord.gg/KjeTgENPbE';
 
 // Fetch GitHub Releases
 async function fetchGitHubReleases() {
