@@ -227,7 +227,7 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
                       child: ReorderableListView.builder(
                         padding: const EdgeInsets.all(16),
                         itemCount: _orderedPdfs.length,
-                        onReorderItem: (oldIndex, newIndex) => _reorderPdfs(oldIndex, newIndex),
+                        onReorder: _reorderPdfs,
                         itemBuilder: (context, index) {
                           final pdf = _orderedPdfs[index];
                           return _buildPdfItem(pdf, index, theme, colorScheme);
