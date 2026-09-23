@@ -5,8 +5,8 @@
 </div>
 
 <div align="center">
-  <a href="https://github.com/prateek54353/PaperWise/releases/tag/v2.6.1">
-    <img src="https://img.shields.io/badge/Latest%20release-v2.6.1-blue?style=for-the-badge" alt="Latest release: v2.6.1" />
+  <a href="https://github.com/prateek54353/PaperWise/releases/tag/v2.6.3">
+    <img src="https://img.shields.io/badge/Latest%20release-v2.6.1-blue?style=for-the-badge" alt="Latest release: v2.6.3" />
   </a>
   <a href="https://github.com/prateek54353/PaperWise/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/prateek54353/PaperWise?style=for-the-badge&label=License" alt="MIT License" />
@@ -18,10 +18,11 @@
 
 Paperwise turns photos and scanned pages into PDF documents while keeping your files on your device. It is ad-free, tracker-free, and built with Flutter.
 
-## What's new in v2.6.1
+## What's new in v2.6.3
 
-Version 2.6.1 introduces a complete PDF-management workflow:
+Version 2.6.3 introduces a complete PDF-management workflow:
 
+- **FreeForm Cropping** included with the system default cropping tool.
 - **Merge PDFs** with preview thumbnails, drag-to-reorder, custom output names, and merge progress.
 - **Split PDFs** from a visual page selector—either create one PDF from selected pages or export every page separately.
 - **Sort documents** by date, name, size, or page count.
@@ -31,7 +32,7 @@ Version 2.6.1 introduces a complete PDF-management workflow:
 
 > **PDF fidelity note:** Merge and split operations render pages to images. Complex vector content, text layers, and annotations may not be preserved exactly.
 
-See the full details in the [v2.6.1 release notes](https://github.com/prateek54353/PaperWise/releases/tag/v2.6.1).
+See the full details in the [v2.6.1 release notes](https://github.com/prateek54353/PaperWise/releases/tag/v2.6.3.
 
 ## Features
 
@@ -53,7 +54,7 @@ See the full details in the [v2.6.1 release notes](https://github.com/prateek543
 
 ## Download
 
-Download the latest Android release from [GitHub Releases](https://github.com/prateek54353/PaperWise/releases/tag/v2.6.1). You can also install Paperwise through [IzzyOnDroid](https://apt.izzysoft.de/packages/org.paperwise.app/), which is recommended for automatic updates.
+Download the latest Android release from [GitHub Releases](https://github.com/prateek54353/PaperWise/releases/tag/v2.6.3). You can also install Paperwise through [IzzyOnDroid](https://apt.izzysoft.de/packages/org.paperwise.app/), which is recommended for automatic updates.
 
 ## Build from source
 
