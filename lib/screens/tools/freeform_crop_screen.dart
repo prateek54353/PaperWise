@@ -20,6 +20,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
   bool _busy = true, _saving = false;
   double _zoom = 1;
   Offset _pan = Offset.zero, _last = Offset.zero;
+  double _startZoom = 1;
   int? _corner;
   List<Offset> _points = _defaults();
 
@@ -62,6 +63,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
 
   void _start(ScaleStartDetails d, Rect r) {
     _last = d.localFocalPoint;
+    _startZoom = _zoom;
     final p = _imagePoint(_last, r);
     _corner = null;
     var best = 34 / (_zoom * r.shortestSide);
@@ -76,7 +78,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
       setState(() => _points[_corner!] = _imagePoint(d.localFocalPoint, r));
     } else {
       setState(() {
-        _zoom = (_zoom * d.scale).clamp(1.0, 5.0);
+        _zoom = (_startZoom * d.scale).clamp(1.0, 5.0);
         _pan += d.localFocalPoint - _last;
         _last = d.localFocalPoint;
       });
