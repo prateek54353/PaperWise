@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:paperwise_pdf_maker/core/utils/error_handler.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 import 'package:pdfx/pdfx.dart';
@@ -30,16 +31,25 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   }
 
   Future<void> _initController() async {
-    _pdfController = PdfController(
-      document: PdfDocument.openFile(widget.pdf.file.path),
-    );
+    try {
+      _pdfController = PdfController(
+        document: PdfDocument.openFile(widget.pdf.file.path),
+      );
 
-    final document = await _pdfController.document;
-    if (mounted) {
-      setState(() {
-        _totalPages = document.pagesCount;
-        _isLoading = false;
-      });
+      final document = await _pdfController.document;
+      if (mounted) {
+        setState(() {
+          _totalPages = document.pagesCount;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.showError(context, ErrorHandler.exceptionToFailure(e));
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -50,21 +60,33 @@ class _PdfViewerScreenState extends ConsumerState<PdfViewerScreen> {
   }
 
   Future<void> _sharePdf() async {
-    await ref.read(libraryProvider.notifier).sharePdf(widget.pdf);
+    try {
+      await ref.read(libraryProvider.notifier).sharePdf(widget.pdf);
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.showError(context, ErrorHandler.exceptionToFailure(e));
+      }
+    }
   }
 
   Future<void> _downloadPdf() async {
-    await ref.read(libraryProvider.notifier).downloadPdf(widget.pdf);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF saved to Downloads'),
-          action: SnackBarAction(
-            label: 'Dismiss',
-            onPressed: () {},
+    try {
+      await ref.read(libraryProvider.notifier).downloadPdf(widget.pdf);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('PDF saved to Downloads'),
+            action: SnackBarAction(
+              label: 'Dismiss',
+              onPressed: () {},
+            ),
           ),
-        ),
-      );
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ErrorHandler.showError(context, ErrorHandler.exceptionToFailure(e));
+      }
     }
   }
 

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- For sharing files from external storage -->
+    <external-path
+        name="external_files"
+        path="." />
+    
+    <!-- For sharing files from app-specific external storage -->
+    <external-files-path
+        name="external_app_files"
+        path="." />
+    
+    <!-- For sharing files from cache -->
+    <cache-path
+        name="cache"
+        path="." />
+    
+    <!-- For sharing files from app-specific cache -->
+    <external-cache-path
+        name="external_cache"
+        path="." />
+    
+    <!-- For sharing files from internal storage -->
+    <files-path
+        name="internal_files"
+        path="." />
+</paths>

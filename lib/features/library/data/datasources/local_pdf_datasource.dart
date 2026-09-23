@@ -1,6 +1,10 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart' as pp;
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:pdfx/pdfx.dart' as pdfx;
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
 import '../models/pdf_model.dart';
 
@@ -9,6 +13,8 @@ abstract class PdfDataSource {
   Future<void> deletePdf(String pdfPath);
   Future<String> downloadPdf(String pdfPath);
   Future<String> renamePdf(String pdfPath, String newName);
+  Future<String> savePdfBytes(Uint8List pdfBytes, String fileName);
+  Future<void> mergePdfs(List<String> pdfPaths, String outputName);
 }
 
 class LocalPdfDataSource implements PdfDataSource {
@@ -96,6 +102,95 @@ class LocalPdfDataSource implements PdfDataSource {
       return newFile.path;
     } catch (e) {
       throw Exception('Failed to rename PDF: $e');
+    }
+  }
+
+  @override
+  Future<String> savePdfBytes(Uint8List pdfBytes, String fileName) async {
+    try {
+      final documentsDir = await pp.getApplicationDocumentsDirectory();
+      final pdfDir = Directory(path.join(documentsDir.path,
+          AppConstants.pdfDirectoryName, AppConstants.pdfSubdirectory));
+
+      if (!await pdfDir.exists()) {
+        await pdfDir.create(recursive: true);
+      }
+
+      final filePath = path.join(pdfDir.path, fileName);
+      final file = File(filePath);
+      await file.writeAsBytes(pdfBytes);
+      return filePath;
+    } catch (e) {
+      throw Exception('Failed to save PDF: $e');
+    }
+  }
+
+  @override
+  Future<void> mergePdfs(List<String> pdfPaths, String outputName) async {
+    try {
+      final documentsDir = await pp.getApplicationDocumentsDirectory();
+      final pdfDir = Directory(path.join(documentsDir.path,
+          AppConstants.pdfDirectoryName, AppConstants.pdfSubdirectory));
+
+      if (!await pdfDir.exists()) {
+        await pdfDir.create(recursive: true);
+      }
+
+      final outputPath = path.join(pdfDir.path, outputName);
+      
+      // Proper page-level merging using pdfx and pdf libraries
+      final mergedPdf = pw.Document();
+      
+      for (final pdfPath in pdfPaths) {
+        final file = File(pdfPath);
+        final pdfBytes = await file.readAsBytes();
+        final pdfDoc = await pdfx.PdfDocument.openData(pdfBytes);
+        
+        // Process each page
+        for (var i = 1; i <= pdfDoc.pagesCount; i++) {
+          try {
+            final page = await pdfDoc.getPage(i);
+            
+            // Try rendering with different resolutions
+            List<int> resolutions = [2, 1, 3];
+            Uint8List? pageBytes;
+            
+            for (final resolution in resolutions) {
+              try {
+                final pageImage = await page.render(
+                  width: page.width * resolution,
+                  height: page.height * resolution,
+                );
+                pageBytes = pageImage?.bytes;
+                if (pageBytes != null && pageBytes.isNotEmpty) {
+                  break;
+                }
+              } catch (renderError) {
+                continue;
+              }
+            }
+            
+            if (pageBytes != null && pageBytes.isNotEmpty) {
+              final pdfImage = pw.MemoryImage(pageBytes);
+              mergedPdf.addPage(
+                pw.Page(
+                  pageFormat: PdfPageFormat(page.width.toDouble(), page.height.toDouble()),
+                  build: (context) => pw.Image(pdfImage),
+                ),
+              );
+            }
+          } catch (pageError) {
+            debugPrint('Error processing page $i from $pdfPath: $pageError');
+          }
+        }
+        
+        await pdfDoc.close();
+      }
+
+      final outputFile = File(outputPath);
+      await outputFile.writeAsBytes(await mergedPdf.save());
+    } catch (e) {
+      throw Exception('Failed to merge PDFs: $e');
     }
   }
 }

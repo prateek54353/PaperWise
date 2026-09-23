@@ -33,7 +33,7 @@ async function updateDownloadSection() {
             <div class="version-details">
                 <div class="version-item">
                     <span class="version-label">Latest Version:</span>
-                    <span class="version-value">v2.6.1</span>
+                    <span class="version-value">v2.6.2</span>
                 </div>
                 <div class="version-item">
                     <span class="version-label">Released:</span>

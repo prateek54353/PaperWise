@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -66,7 +65,8 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
     _startZoom = _zoom;
     final p = _imagePoint(_last, r);
     _corner = null;
-    var best = 34 / (_zoom * r.shortestSide);
+    // Use a larger threshold for better corner detection
+    var best = 0.2;
     for (var i = 0; i < 4; i++) {
       final distance = (_points[i] - p).distance;
       if (distance < best) { best = distance; _corner = i; }
@@ -74,7 +74,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
   }
 
   void _update(ScaleUpdateDetails d, Rect r) {
-    if (_corner != null && d.pointerCount == 1) {
+    if (_corner != null) {
       setState(() => _points[_corner!] = _imagePoint(d.localFocalPoint, r));
     } else {
       setState(() {
@@ -114,8 +114,7 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
     try {
       final bytes = await compute(_warp, _Crop(_original!, _points.map((p) => [p.dx, p.dy]).toList(), _turns));
       final dir = await getTemporaryDirectory();
-      final output = File(path.join(dir.path, 'paperwise_crop_' +
-          DateTime.now().microsecondsSinceEpoch.toString() + '.jpg'));
+      final output = File(path.join(dir.path, 'paperwise_crop_${DateTime.now().microsecondsSinceEpoch}.jpg'));
       await output.writeAsBytes(bytes, flush: true);
       if (mounted) Navigator.pop(context, output);
     } catch (e) {
@@ -148,6 +147,9 @@ class _FreeformCropScreenState extends State<FreeformCropScreen> {
               behavior: HitTestBehavior.opaque,
               onScaleStart: (d) => _start(d, rect),
               onScaleUpdate: (d) => _update(d, rect),
+              onScaleEnd: (d) {
+                _corner = null;
+              },
               child: Stack(children: [
                 Positioned(left: rect.left + _pan.dx, top: rect.top + _pan.dy, width: rect.width * _zoom, height: rect.height * _zoom,
                   child: Stack(fit: StackFit.expand, children: [

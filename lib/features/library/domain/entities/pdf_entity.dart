@@ -6,6 +6,7 @@ class PdfEntity {
   final DateTime createdAt;
   final DateTime modifiedAt;
   final int size;
+  final int pageCount;
 
   PdfEntity({
     required this.file,
@@ -13,6 +14,7 @@ class PdfEntity {
     required this.createdAt,
     required this.modifiedAt,
     required this.size,
+    this.pageCount = 1,
   });
 
   PdfEntity copyWith({
@@ -21,6 +23,7 @@ class PdfEntity {
     DateTime? createdAt,
     DateTime? modifiedAt,
     int? size,
+    int? pageCount,
   }) {
     return PdfEntity(
       file: file ?? this.file,
@@ -28,6 +31,7 @@ class PdfEntity {
       createdAt: createdAt ?? this.createdAt,
       modifiedAt: modifiedAt ?? this.modifiedAt,
       size: size ?? this.size,
+      pageCount: pageCount ?? this.pageCount,
     );
   }
 

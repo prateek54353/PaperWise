@@ -10,6 +10,7 @@ class PdfListItem extends ConsumerWidget {
   final VoidCallback onRename;
   final VoidCallback onDelete;
   final VoidCallback onShare;
+  final VoidCallback? onSplit;
 
   const PdfListItem({
     super.key,
@@ -18,6 +19,7 @@ class PdfListItem extends ConsumerWidget {
     required this.onRename,
     required this.onDelete,
     required this.onShare,
+    this.onSplit,
   });
 
   @override
@@ -120,6 +122,17 @@ class PdfListItem extends ConsumerWidget {
                                 ],
                               ),
                             ),
+                            if (onSplit != null)
+                              PopupMenuItem(
+                                value: 'split',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.call_split, color: colorScheme.tertiary),
+                                    const SizedBox(width: 8),
+                                    Text('Split', style: TextStyle(color: colorScheme.tertiary)),
+                                  ],
+                                ),
+                              ),
                             PopupMenuItem(
                               value: 'share',
                               child: Row(
@@ -145,6 +158,9 @@ class PdfListItem extends ConsumerWidget {
                             switch (value) {
                               case 'rename':
                                 onRename();
+                                break;
+                              case 'split':
+                                onSplit?.call();
                                 break;
                               case 'share':
                                 onShare();

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
 import 'package:paperwise_pdf_maker/features/library/application/usecases/delete_pdf_usecase.dart';
@@ -57,6 +58,16 @@ class LibraryFacade {
   /// Sort PDFs
   Future<Either<Failure, List<PdfEntity>>> sortPdfs(List<PdfEntity> pdfs, SortOption option) async {
     return await repository.sortPdfs(pdfs, option);
+  }
+
+  /// Save PDF bytes as a new PDF
+  Future<Either<Failure, PdfEntity>> savePdfBytes(Uint8List pdfBytes, String fileName) async {
+    return await repository.savePdfBytes(pdfBytes, fileName);
+  }
+
+  /// Merge multiple PDFs
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName) async {
+    return await repository.mergePdfs(pdfs, outputName);
   }
 }
 

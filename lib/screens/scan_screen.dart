@@ -8,12 +8,16 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:paperwise_pdf_maker/core/commands/command_history.dart';
+import 'package:paperwise_pdf_maker/core/commands/image_commands.dart';
+import 'package:paperwise_pdf_maker/core/utils/error_handler.dart';
+import 'package:paperwise_pdf_maker/core/utils/permission_handler.dart';
 import 'package:paperwise_pdf_maker/features/settings/domain/value_objects/compression_level.dart';
 import 'package:paperwise_pdf_maker/features/settings/presentation/providers/settings_provider.dart';
-import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
-import 'package:paperwise_pdf_maker/screens/tools/camera_scan_screen.dart';
-import 'package:paperwise_pdf_maker/screens/tools/image_filter_editor_screen.dart';
-import 'package:paperwise_pdf_maker/screens/tools/freeform_crop_screen.dart';
+import 'package:paperwise_pdf_maker/features/scan/domain/value_objects/page_size_mode.dart';
+import 'package:paperwise_pdf_maker/features/scan/presentation/screens/camera_scan_screen.dart';
+import 'package:paperwise_pdf_maker/features/scan/presentation/screens/image_filter_editor_screen.dart';
+import 'package:paperwise_pdf_maker/features/scan/presentation/screens/freeform_crop_screen.dart';
 import 'package:paperwise_pdf_maker/services/pdf_service.dart';
 import 'package:paperwise_pdf_maker/widgets/image_preview_card.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
@@ -28,6 +32,7 @@ class ScanScreen extends ConsumerStatefulWidget {
 class _ScanScreenState extends ConsumerState<ScanScreen> {
   final List<File> _selectedImages = [];
   final PDFService _pdfService = PDFService();
+  final CommandHistory _commandHistory = CommandHistory();
   bool _isProcessing = false;
   String _processingStatus = '';
   PageSizeMode _pageSizeMode = PageSizeMode.fit;
@@ -54,6 +59,28 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.undo_outlined),
+            tooltip: _commandHistory.undoDescription ?? 'Undo',
+            onPressed: _commandHistory.canUndo
+                ? () {
+                    setState(() {
+                      _commandHistory.undo();
+                    });
+                  }
+                : null,
+          ),
+          IconButton(
+            icon: const Icon(Icons.redo_outlined),
+            tooltip: _commandHistory.redoDescription ?? 'Redo',
+            onPressed: _commandHistory.canRedo
+                ? () {
+                    setState(() {
+                      _commandHistory.redo();
+                    });
+                  }
+                : null,
+          ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Rename scan',
@@ -90,14 +117,23 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                           selectedImages: _selectedImages,
                           onReorder: (oldIndex, newIndex) {
                             setState(() {
-                              if (oldIndex < newIndex) newIndex -= 1;
-                              final item = _selectedImages.removeAt(oldIndex);
-                              _selectedImages.insert(newIndex, item);
+                              _commandHistory.execute(
+                                ReorderImagesCommand(
+                                  images: _selectedImages,
+                                  oldIndex: oldIndex,
+                                  newIndex: newIndex,
+                                ),
+                              );
                             });
                           },
                           onDelete: (index) {
                             setState(() {
-                              _selectedImages.removeAt(index);
+                              _commandHistory.execute(
+                                RemoveImageCommand(
+                                  images: _selectedImages,
+                                  image: _selectedImages[index],
+                                ),
+                              );
                             });
                           },
                           onCrop: (index) => _cropImage(index),
@@ -162,35 +198,59 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
     if (mode == null || !mounted) return;
 
-    File? result;
-    if (mode == 'freeform') {
-      result = await Navigator.of(context).push<File>(
-        MaterialPageRoute(
-          builder: (_) => FreeformCropScreen(imageFile: _selectedImages[index]),
-        ),
-      );
-    } else {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: _selectedImages[index].path,
-        compressFormat: ImageCompressFormat.jpg,
-        compressQuality: 100,
-        uiSettings: [
-          IOSUiSettings(
-            title: 'Crop photo',
-            embedInNavigationController: true,
-          ),
-        ],
-      );
-      if (croppedFile != null) result = File(croppedFile.path);
-    }
+    // Show loading state
+    setState(() {
+      _isProcessing = true;
+      _processingStatus = 'Cropping image...';
+    });
 
-    if (result != null && mounted) {
-      final compressionLevel =
-          ref.read(settingsProvider).settings.compressionLevel;
-      final compressedFile =
-          await _compressImage(result, compressionLevel.quality);
-      if (compressedFile != null && mounted) {
-        setState(() => _selectedImages[index] = compressedFile);
+    File? result;
+    try {
+      if (mode == 'freeform') {
+        result = await Navigator.of(context).push<File>(
+          MaterialPageRoute(
+            builder: (_) => FreeformCropScreen(imageFile: _selectedImages[index]),
+          ),
+        );
+      } else {
+        final croppedFile = await ImageCropper().cropImage(
+          sourcePath: _selectedImages[index].path,
+          compressFormat: ImageCompressFormat.jpg,
+          compressQuality: 100,
+          uiSettings: [
+            IOSUiSettings(
+              title: 'Crop photo',
+              embedInNavigationController: true,
+            ),
+          ],
+        );
+        if (croppedFile != null) result = File(croppedFile.path);
+      }
+
+      if (result != null && mounted) {
+        setState(() {
+          _processingStatus = 'Compressing image...';
+        });
+        
+        final compressionLevel =
+            ref.read(settingsProvider).settings.compressionLevel;
+        final compressedFile =
+            await _compressImage(result, compressionLevel.quality);
+        if (compressedFile != null && mounted) {
+          setState(() {
+            _commandHistory.execute(
+              ReplaceImageCommand(
+                images: _selectedImages,
+                oldImage: _selectedImages[index],
+                newImage: compressedFile,
+              ),
+            );
+          });
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
       }
     }
   }
@@ -204,7 +264,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
 
     if (filteredFile != null && mounted) {
-      setState(() => _selectedImages[index] = filteredFile);
+      setState(() {
+        _commandHistory.execute(
+          ReplaceImageCommand(
+            images: _selectedImages,
+            oldImage: _selectedImages[index],
+            newImage: filteredFile,
+          ),
+        );
+      });
     }
   }
 
@@ -221,10 +289,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       for (final file in newImages) {
         final compressed = await _compressImage(file, compressionLevel.quality);
         if (compressed != null) {
-          _selectedImages.add(compressed);
+          setState(() {
+            _commandHistory.execute(
+              AddImageCommand(
+                images: _selectedImages,
+                image: compressed,
+              ),
+            );
+          });
         }
       }
-      setState(() {});
     }
   }
 
@@ -256,6 +330,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
 
     if (source != null && mounted) {
+      // Check storage permission for gallery access
+      if (source == ImageSource.gallery) {
+        final hasPermission = await PermissionHandler.requestStoragePermission(context);
+        if (!hasPermission) {
+          return;
+        }
+      }
+      
       final picker = ImagePicker();
       final compressionLevel =
           ref.read(settingsProvider).settings.compressionLevel;
@@ -267,10 +349,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             final compressedFile = await _compressImage(
                 File(pickedFile.path), compressionLevel.quality);
             if (compressedFile != null) {
-              _selectedImages.add(compressedFile);
+              setState(() {
+                _commandHistory.execute(
+                  AddImageCommand(
+                    images: _selectedImages,
+                    image: compressedFile,
+                  ),
+                );
+              });
             }
           }
-          setState(() {});
         }
       } else {
         final pickedFile = await picker.pickImage(source: source);
@@ -278,7 +366,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           final compressedFile = await _compressImage(
               File(pickedFile.path), compressionLevel.quality);
           if (compressedFile != null) {
-            setState(() => _selectedImages.add(compressedFile));
+            setState(() {
+              _commandHistory.execute(
+                AddImageCommand(
+                  images: _selectedImages,
+                  image: compressedFile,
+                ),
+              );
+            });
           }
         }
       }
@@ -300,11 +395,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     setState(() {
       _isProcessing = true;
-      _processingStatus = 'Generating PDF...';
+      _processingStatus = 'Preparing images...';
+      _commandHistory.clear(); // Clear history on PDF generation
     });
 
     try {
       final fileName = '$pdfName.pdf';
+      
+      // Show progress for multi-page PDFs
+      final totalImages = _selectedImages.length;
+      for (int i = 0; i < totalImages; i++) {
+        if (mounted) {
+          setState(() {
+            _processingStatus = 'Processing page ${i + 1} of $totalImages...';
+          });
+        }
+        // Small delay to allow UI to update
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      
+      setState(() {
+        _processingStatus = 'Generating PDF...';
+      });
+      
       await _pdfService.createPdfFromImages(
         _selectedImages,
         fileName,
@@ -318,8 +431,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error generating PDF: $e')),
+      ErrorHandler.showError(
+        context,
+        ErrorHandler.exceptionToFailure(e),
+        onRetry: () => _generatePDF(),
       );
     } finally {
       if (mounted) {

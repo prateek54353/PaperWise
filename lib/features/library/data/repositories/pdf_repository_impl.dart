@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
 import '../../domain/entities/pdf_entity.dart';
@@ -85,7 +87,7 @@ class PdfRepositoryImpl implements PdfRepository {
   Future<Either<Failure, List<PdfEntity>>> searchPdfs(String query) async {
     try {
       final allPdfs = await loadPdfs();
-      return allPdfs.fold(
+      final Either<Failure, List<PdfEntity>> result = allPdfs.fold(
         (failure) => Left(failure),
         (pdfs) {
           final filtered = pdfs.where((pdf) {
@@ -94,6 +96,7 @@ class PdfRepositoryImpl implements PdfRepository {
           return Right(filtered);
         },
       );
+      return result;
     } catch (e) {
       return Left(PdfFailure('Failed to search PDFs: $e'));
     }
@@ -116,6 +119,48 @@ class PdfRepositoryImpl implements PdfRepository {
       return Right(sorted);
     } catch (e) {
       return Left(PdfFailure('Failed to sort PDFs: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PdfEntity>> savePdfBytes(Uint8List pdfBytes, String fileName) async {
+    try {
+      final filePath = await dataSource.savePdfBytes(pdfBytes, fileName);
+      final file = File(filePath);
+      final modifiedTime = file.lastModifiedSync();
+      final pdfEntity = PdfEntity(
+        file: file,
+        name: fileName,
+        size: file.lengthSync(),
+        pageCount: 1, // Placeholder, could be determined by parsing PDF
+        createdAt: modifiedTime,
+        modifiedAt: modifiedTime,
+      );
+      return Right(pdfEntity);
+    } catch (e) {
+      return Left(PdfFailure('Failed to save PDF: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName) async {
+    try {
+      await dataSource.mergePdfs(pdfs.map((p) => p.file.path).toList(), outputName);
+      // Just return a dummy entity - the library will be refreshed by the provider
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final pdfDir = Directory('${documentsDir.path}/PaperWise/PDFs');
+      final outputFile = File('${pdfDir.path}/$outputName');
+      final pdfEntity = PdfEntity(
+        file: outputFile,
+        name: outputName,
+        size: outputFile.lengthSync(),
+        pageCount: 1,
+        createdAt: outputFile.lastModifiedSync(),
+        modifiedAt: outputFile.lastModifiedSync(),
+      );
+      return Right(pdfEntity);
+    } catch (e) {
+      return Left(PdfFailure('Failed to merge PDFs: $e'));
     }
   }
 }

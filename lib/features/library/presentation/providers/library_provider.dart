@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
 import 'package:paperwise_pdf_maker/features/library/application/library_facade.dart';
@@ -13,7 +15,6 @@ class LibraryState {
   final Failure? error;
   final Set<String> selectedPdfPaths;
   final bool isSelectionMode;
-  final String searchQuery;
   final SortOption sortOption;
 
   const LibraryState({
@@ -22,22 +23,17 @@ class LibraryState {
     this.error,
     this.selectedPdfPaths = const {},
     this.isSelectionMode = false,
-    this.searchQuery = '',
     this.sortOption = SortOption.date,
   });
 
-  List<PdfEntity> get filteredPdfs {
-    var filtered = pdfs.where((pdf) {
-      return pdf.name.toLowerCase().contains(searchQuery.toLowerCase());
-    }).toList();
-
+  List<PdfEntity> get sortedPdfs {
+    var sorted = List<PdfEntity>.from(pdfs);
     if (sortOption == SortOption.name) {
-      filtered.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     } else {
-      filtered.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
+      sorted.sort((a, b) => b.modifiedAt.compareTo(a.modifiedAt));
     }
-
-    return filtered;
+    return sorted;
   }
 
   int get selectedCount => selectedPdfPaths.length;
@@ -54,7 +50,6 @@ class LibraryState {
     Failure? error,
     Set<String>? selectedPdfPaths,
     bool? isSelectionMode,
-    String? searchQuery,
     SortOption? sortOption,
   }) {
     return LibraryState(
@@ -63,7 +58,6 @@ class LibraryState {
       error: error,
       selectedPdfPaths: selectedPdfPaths ?? this.selectedPdfPaths,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
-      searchQuery: searchQuery ?? this.searchQuery,
       sortOption: sortOption ?? this.sortOption,
     );
   }
@@ -93,7 +87,7 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
       (_) {
         final updatedPdfs = List<PdfEntity>.from(state.pdfs);
         updatedPdfs.removeWhere((p) => p.file.path == pdf.file.path);
-        state = state.copyWith(pdfs: updatedPdfs);
+        state = state.copyWith(pdfs: updatedPdfs, error: null);
       },
     );
   }
@@ -121,7 +115,7 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     final result = await facade.sharePdf(pdf);
     result.fold(
       (failure) => state = state.copyWith(error: failure),
-      (_) => null, // Share doesn't change state
+      (_) => state = state.copyWith(error: null), // Clear any previous error
     );
   }
 
@@ -182,16 +176,37 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     state = state.copyWith(selectedPdfPaths: {}, isSelectionMode: false);
   }
 
-  void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
-  }
-
   void setSortOption(SortOption option) {
     state = state.copyWith(sortOption: option);
   }
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  Future<Either<Failure, PdfEntity>> savePdfBytes(Uint8List pdfBytes, String fileName) async {
+    final result = await facade.savePdfBytes(pdfBytes, fileName);
+    result.fold(
+      (failure) => state = state.copyWith(error: failure),
+      (pdfEntity) {
+        final updatedPdfs = List<PdfEntity>.from(state.pdfs);
+        updatedPdfs.add(pdfEntity);
+        state = state.copyWith(pdfs: updatedPdfs, error: null);
+      },
+    );
+    return result;
+  }
+
+  Future<Either<Failure, PdfEntity>> mergePdfs(List<PdfEntity> pdfs, String outputName) async {
+    final result = await facade.mergePdfs(pdfs, outputName);
+    result.fold(
+      (failure) => state = state.copyWith(error: failure),
+      (pdfEntity) {
+        // Refresh the library after merge
+        loadPdfs();
+      },
+    );
+    return result;
   }
 }
 

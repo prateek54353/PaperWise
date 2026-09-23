@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
+import 'package:paperwise_pdf_maker/core/utils/error_handler.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_merge_screen.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_split_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_viewer_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/widgets/pdf_list_item.dart';
 import 'package:paperwise_pdf_maker/features/settings/presentation/screens/settings_screen.dart';
@@ -18,19 +21,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  final TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      ref.read(libraryProvider.notifier).setSearchQuery(_searchController.text);
-    });
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -87,8 +84,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (newName != null && mounted) {
-      ref.read(libraryProvider.notifier).renamePdf(pdf, newName);
-      ref.read(libraryProvider.notifier).loadPdfs();
+      ErrorHandler.showLoading(context, 'Renaming PDF...');
+      
+      await ref.read(libraryProvider.notifier).renamePdf(pdf, newName);
+      await ref.read(libraryProvider.notifier).loadPdfs();
+      
+      if (mounted) {
+        ErrorHandler.hideLoading(context);
+        ErrorHandler.showSuccess(context, 'PDF renamed successfully');
+      }
     }
   }
 
@@ -113,17 +117,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (shouldDelete == true && mounted) {
+      ErrorHandler.showLoading(context, 'Deleting PDF...');
+      
       await ref.read(libraryProvider.notifier).deletePdf(pdf);
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('"${pdf.name}" deleted.')),
-        );
+        ErrorHandler.hideLoading(context);
+        ErrorHandler.showSuccess(context, '"${pdf.name}" deleted.');
       }
     }
   }
 
   Future<void> _sharePdf(PdfEntity pdf) async {
+    ErrorHandler.showLoading(context, 'Preparing PDF for sharing...');
+    
     await ref.read(libraryProvider.notifier).sharePdf(pdf);
+    
+    // Check for errors after the operation
+    if (mounted) {
+      final libraryState = ref.read(libraryProvider);
+      ErrorHandler.hideLoading(context);
+      
+      if (libraryState.error != null) {
+        ErrorHandler.showError(context, libraryState.error!);
+        ref.read(libraryProvider.notifier).clearError();
+      } else {
+        ErrorHandler.showSuccess(context, 'Share sheet opened');
+      }
+    }
   }
 
   Future<void> _deleteSelectedPDFs() async {
@@ -149,32 +170,96 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
 
     if (shouldDelete == true && mounted) {
+      ErrorHandler.showLoading(
+        context, 
+        'Deleting $selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'}...',
+        duration: const Duration(seconds: 60),
+      );
+      
       await ref.read(libraryProvider.notifier).deleteSelectedPdfs();
+      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '$selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} deleted')),
+        ErrorHandler.hideLoading(context);
+        ErrorHandler.showSuccess(
+          context, 
+          '$selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} deleted',
         );
       }
     }
   }
 
   Future<void> _shareSelectedPDFs() async {
+    final selectedCount = ref.read(libraryProvider).selectedCount;
+    
+    // Show loading indicator for batch operations
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            const SizedBox(width: 16),
+            Text('Preparing $selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} for sharing...'),
+          ],
+        ),
+        duration: const Duration(seconds: 60),
+      ),
+    );
+    
     await ref.read(libraryProvider.notifier).shareSelectedPdfs();
+    
+    if (mounted) {
+      messenger.clearSnackBars();
+    }
+  }
+
+  void _mergeSelectedPDFs() {
+    final selectedPdfs = ref.read(libraryProvider).selectedPdfs;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfMergeScreen(pdfs: selectedPdfs),
+      ),
+    );
+  }
+
+  void _splitPdf(PdfEntity pdf) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfSplitScreen(pdf: pdf),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final libraryState = ref.watch(libraryProvider);
     final isSelectionMode = libraryState.isSelectionMode;
-    final filteredPdfs = libraryState.filteredPdfs;
+
+    // Show error if present
+    if (libraryState.error != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ErrorHandler.showError(context, libraryState.error!);
+        ref.read(libraryProvider.notifier).clearError();
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppConstants.appName),
         actions: isSelectionMode
             ? [
+                if (libraryState.selectedCount >= 2)
+                  IconButton(
+                    icon: const Icon(Icons.merge_type),
+                    tooltip: 'Merge Selected',
+                    onPressed: _mergeSelectedPDFs,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.share),
                   tooltip: 'Share Selected',
@@ -212,17 +297,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               .fadeIn()
           : null,
       body: RefreshIndicator(
-        onRefresh: () => ref.read(libraryProvider.notifier).loadPdfs(),
+        onRefresh: () async {
+          await ref.read(libraryProvider.notifier).loadPdfs();
+          if (!mounted) return;
+          final ctx = context;
+          if (ctx.mounted) {
+            ErrorHandler.showSuccess(ctx, 'Library refreshed');
+          }
+        },
         child: libraryState.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : filteredPdfs.isEmpty
-                ? _HomeEmptyState(searchText: _searchController.text)
+            ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Loading PDFs...'),
+                  ],
+                ),
+              )
+            : libraryState.sortedPdfs.isEmpty
+                ? const _HomeEmptyState()
                 : _PdfListView(
-                    pdfs: filteredPdfs,
+                    pdfs: libraryState.sortedPdfs,
                     onOpen: _openPDF,
                     onDelete: _deletePDF,
                     onRename: _renamePdf,
                     onShare: _sharePdf,
+                    onSplit: _splitPdf,
                   ),
       ),
     );
@@ -230,8 +332,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _HomeEmptyState extends StatelessWidget {
-  final String searchText;
-  const _HomeEmptyState({required this.searchText});
+  const _HomeEmptyState();
 
   @override
   Widget build(BuildContext context) {
@@ -247,16 +348,14 @@ class _HomeEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            searchText.isEmpty ? 'No PDFs Yet' : 'No Results Found',
+            'No PDFs Yet',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            searchText.isEmpty
-                ? 'Tap "New Scan" to create your first PDF'
-                : 'Try a different search term',
+            'Tap "New Scan" to create your first PDF',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -274,6 +373,7 @@ class _PdfListView extends StatelessWidget {
   final void Function(PdfEntity pdf) onDelete;
   final void Function(PdfEntity pdf) onRename;
   final void Function(PdfEntity pdf) onShare;
+  final void Function(PdfEntity pdf)? onSplit;
 
   const _PdfListView({
     required this.pdfs,
@@ -281,6 +381,7 @@ class _PdfListView extends StatelessWidget {
     required this.onDelete,
     required this.onRename,
     required this.onShare,
+    this.onSplit,
   });
 
   @override
@@ -298,6 +399,7 @@ class _PdfListView extends StatelessWidget {
             onDelete: () => onDelete(pdf),
             onRename: () => onRename(pdf),
             onShare: () => onShare(pdf),
+            onSplit: onSplit != null ? () => onSplit!(pdf) : null,
           )
               .animate()
               .fadeIn(duration: 300.ms, delay: (100 * index).ms)

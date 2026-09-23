@@ -5,8 +5,7 @@ import 'package:path/path.dart' as path;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
-import 'package:paperwise_pdf_maker/models/app_settings.dart';
-import 'package:paperwise_pdf_maker/models/page_size_mode.dart';
+import 'package:paperwise_pdf_maker/features/scan/domain/value_objects/page_size_mode.dart';
 
 class PDFService {
   /// Gets the default save directory for PDFs
@@ -35,7 +34,6 @@ class PDFService {
     List<File> images,
     String fileName, {
     PageSizeMode pageSizeMode = PageSizeMode.a4,
-    AppSettings? settings,
   }) async {
     try {
       final pdf = pw.Document();
@@ -123,6 +121,8 @@ class PDFService {
   /// Shares a PDF file using the system share sheet
   Future<void> sharePDF(File pdfFile) async {
     try {
+      // Create XFile directly from the file path
+      // The share_plus package handles FileProvider URIs automatically on Android
       await Share.shareXFiles(
         [XFile(pdfFile.path)],
         subject: path.basename(pdfFile.path),
