@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
 
 /// Centralized permission handler for consistent permission requests
 class PermissionHandler {
@@ -18,7 +19,7 @@ class PermissionHandler {
         context,
         'Camera Permission Required',
         'Camera permission is permanently denied. Please enable it in app settings.',
-        () => openAppSettings(),
+        () => AppSettings.openAppSettings(),
       );
       return false;
     }
@@ -54,7 +55,7 @@ class PermissionHandler {
           context,
           'Storage Permission Required',
           'Storage permission is permanently denied. Please enable it in app settings.',
-          () => openAppSettings(),
+          () => AppSettings.openAppSettings(),
         );
         return false;
       }
@@ -83,7 +84,7 @@ class PermissionHandler {
           context,
           'Storage Permission Required',
           'Storage permission is permanently denied. Please enable it in app settings.',
-          () => openAppSettings(),
+          () => AppSettings.openAppSettings(),
         );
         return false;
       }
@@ -122,7 +123,7 @@ class PermissionHandler {
         context,
         'Permissions Required',
         'Some permissions are permanently denied. Please enable them in app settings.',
-        () => openAppSettings(),
+        () => AppSettings.openAppSettings(),
       );
     }
     

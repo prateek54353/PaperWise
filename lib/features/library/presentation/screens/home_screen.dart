@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
 import 'package:paperwise_pdf_maker/core/utils/error_handler.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
+import 'package:paperwise_pdf_maker/features/library/domain/repositories/pdf_repository.dart' show SortOption;
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_merge_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_split_screen.dart';
@@ -11,7 +12,7 @@ import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_vi
 import 'package:paperwise_pdf_maker/features/library/presentation/widgets/pdf_list_item.dart';
 import 'package:paperwise_pdf_maker/features/settings/presentation/screens/settings_screen.dart';
 import 'package:path/path.dart' as path;
-import 'package:paperwise_pdf_maker/screens/scan_screen.dart';
+import 'package:paperwise_pdf_maker/features/scan/presentation/screens/scan_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -96,34 +101,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  Future<void> _deletePDF(PdfEntity pdf) async {
-    final bool? shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete PDF?'),
-        content: Text('Are you sure you want to delete "${pdf.name}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _deletePDF(PdfEntity pdf, {bool fromSwipe = false}) async {
+    if (!fromSwipe) {
+      final bool? shouldDelete = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete PDF?'),
+          content: Text('Are you sure you want to delete "${pdf.name}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      );
 
-    if (shouldDelete == true && mounted) {
+      if (shouldDelete != true) return;
+    }
+
+    if (mounted) {
       ErrorHandler.showLoading(context, 'Deleting PDF...');
       
       await ref.read(libraryProvider.notifier).deletePdf(pdf);
       
       if (mounted) {
         ErrorHandler.hideLoading(context);
-        ErrorHandler.showSuccess(context, '"${pdf.name}" deleted.');
+        
+        // Show SnackBar with undo option
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('"${pdf.name}" deleted'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () async {
+                await ref.read(libraryProvider.notifier).undoDeletePdf(pdf);
+                if (mounted) {
+                  ErrorHandler.showSuccess(context, 'PDF restored');
+                }
+              },
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     }
   }
@@ -251,7 +276,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(AppConstants.appName),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search PDFs...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
+                ),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                onChanged: (value) {
+                  ref.read(libraryProvider.notifier).setSearchQuery(value);
+                },
+              )
+            : const Text(AppConstants.appName),
         actions: isSelectionMode
             ? [
                 if (libraryState.selectedCount >= 2)
@@ -272,6 +315,84 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ]
             : [
+                if (!_isSearching)
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    tooltip: 'Search',
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = true;
+                      });
+                    },
+                  ),
+                if (!_isSearching)
+                  PopupMenuButton<SortOption>(
+                    icon: const Icon(Icons.sort),
+                    tooltip: 'Sort',
+                    onSelected: (option) {
+                      ref.read(libraryProvider.notifier).setSortOption(option);
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: SortOption.date,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              color: libraryState.sortOption == SortOption.date
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Date'),
+                            if (libraryState.sortOption == SortOption.date)
+                              const Spacer(),
+                            if (libraryState.sortOption == SortOption.date)
+                              Icon(
+                                Icons.check,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 16,
+                              ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: SortOption.name,
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.sort_by_alpha,
+                              color: libraryState.sortOption == SortOption.name
+                                  ? Theme.of(context).colorScheme.primary
+                                  : null,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text('Name'),
+                            if (libraryState.sortOption == SortOption.name)
+                              const Spacer(),
+                            if (libraryState.sortOption == SortOption.name)
+                              Icon(
+                                Icons.check,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 16,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                if (_isSearching)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close search',
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchController.clear();
+                        ref.read(libraryProvider.notifier).setSearchQuery('');
+                      });
+                    },
+                  ),
                 IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   tooltip: 'Settings',
@@ -317,7 +438,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               )
             : libraryState.sortedPdfs.isEmpty
-                ? const _HomeEmptyState()
+                ? _HomeEmptyState(searchQuery: libraryState.searchQuery)
                 : _PdfListView(
                     pdfs: libraryState.sortedPdfs,
                     onOpen: _openPDF,
@@ -332,30 +453,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _HomeEmptyState extends StatelessWidget {
-  const _HomeEmptyState();
+  final String searchQuery;
+
+  const _HomeEmptyState({this.searchQuery = ''});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isSearchResult = searchQuery.isNotEmpty;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.find_in_page_outlined,
+            isSearchResult ? Icons.search_off : Icons.find_in_page_outlined,
             size: 80,
             color: colorScheme.secondary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
-            'No PDFs Yet',
+            isSearchResult ? 'No Results' : 'No PDFs Yet',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap "New Scan" to create your first PDF',
+            isSearchResult 
+                ? 'No PDFs match "$searchQuery"'
+                : 'Tap "New Scan" to create your first PDF',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -370,7 +497,7 @@ class _HomeEmptyState extends StatelessWidget {
 class _PdfListView extends StatelessWidget {
   final List<PdfEntity> pdfs;
   final void Function(PdfEntity pdf) onOpen;
-  final void Function(PdfEntity pdf) onDelete;
+  final void Function(PdfEntity pdf, {bool fromSwipe}) onDelete;
   final void Function(PdfEntity pdf) onRename;
   final void Function(PdfEntity pdf) onShare;
   final void Function(PdfEntity pdf)? onSplit;
@@ -393,17 +520,58 @@ class _PdfListView extends StatelessWidget {
         final pdf = pdfs[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 8.0),
-          child: PdfListItem(
-            pdf: pdf,
-            onTap: () => onOpen(pdf),
-            onDelete: () => onDelete(pdf),
-            onRename: () => onRename(pdf),
-            onShare: () => onShare(pdf),
-            onSplit: onSplit != null ? () => onSplit!(pdf) : null,
-          )
-              .animate()
-              .fadeIn(duration: 300.ms, delay: (100 * index).ms)
-              .slideX(begin: -0.2),
+          child: Dismissible(
+            key: ValueKey(pdf.file.path),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20.0),
+              color: Colors.red,
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.delete, color: Colors.white),
+                  SizedBox(height: 4),
+                  Text('Delete', style: TextStyle(color: Colors.white)),
+                ],
+              ),
+            ),
+            confirmDismiss: (direction) async {
+              final bool? shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Delete PDF?'),
+                  content: Text('Are you sure you want to delete "${pdf.name}"?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              return shouldDelete == true;
+            },
+            onDismissed: (direction) {
+              onDelete(pdf);
+            },
+            child: PdfListItem(
+              pdf: pdf,
+              onTap: () => onOpen(pdf),
+              onDelete: () => onDelete(pdf),
+              onRename: () => onRename(pdf),
+              onShare: () => onShare(pdf),
+              onSplit: onSplit != null ? () => onSplit!(pdf) : null,
+            )
+                .animate()
+                .fadeIn(duration: 300.ms, delay: (100 * index).ms)
+                .slideX(begin: -0.2),
+          ),
         );
       },
     );

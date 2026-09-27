@@ -1,7 +1,7 @@
 name: paperwise_pdf_maker
 description: A FOSS PDF maker app that converts images to PDF.
 publish_to: 'none'
-version: 2.6.3+2015
+version: 2.6.4+2016
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -17,7 +17,7 @@ dependencies:
   intl: ^0.19.0
   flutter_riverpod: ^2.4.9 # State management
   dartz: ^0.10.1 # Functional programming (Either pattern)
-  shared_preferences: ^2.2.2 # For saving settings
+  shared_preferences: ^2.2.2 # For saving settings and onboarding
   flutter_animate: ^4.5.0 # For beautiful, simple animations
   
   # Image & PDF Handling
@@ -30,9 +30,10 @@ dependencies:
   reorderable_grid_view: ^2.2.8
   http: ^1.1.0
   url_launcher: ^6.2.2
-  package_info_plus: ^8.3.0 # Added for update checks
+  package_info_plus: ^8.3.0 # Added for version checks and update screen
   camera: ^0.10.5+9
   permission_handler: ^11.0.0 # For handling Android permissions
+  app_settings: ^5.1.1 # For opening app settings
   
 
   # In-App PDF Viewer

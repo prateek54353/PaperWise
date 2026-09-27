@@ -18,8 +18,8 @@ import 'package:paperwise_pdf_maker/features/scan/domain/value_objects/page_size
 import 'package:paperwise_pdf_maker/features/scan/presentation/screens/camera_scan_screen.dart';
 import 'package:paperwise_pdf_maker/features/scan/presentation/screens/image_filter_editor_screen.dart';
 import 'package:paperwise_pdf_maker/features/scan/presentation/screens/freeform_crop_screen.dart';
-import 'package:paperwise_pdf_maker/services/pdf_service.dart';
-import 'package:paperwise_pdf_maker/widgets/image_preview_card.dart';
+import 'package:paperwise_pdf_maker/features/library/data/services/pdf_service.dart';
+import 'package:paperwise_pdf_maker/features/scan/presentation/widgets/image_preview_card.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {

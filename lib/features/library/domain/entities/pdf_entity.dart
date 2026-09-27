@@ -17,6 +17,8 @@ class PdfEntity {
     this.pageCount = 1,
   });
 
+  String get path => file.path;
+
   PdfEntity copyWith({
     File? file,
     String? name,

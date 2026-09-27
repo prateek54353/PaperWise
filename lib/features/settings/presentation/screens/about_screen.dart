@@ -109,7 +109,13 @@ class AboutScreen extends StatelessWidget {
             leading: const Icon(Icons.discord),
             title: const Text('Discord Community'),
             subtitle: const Text('Join our Discord server'),
-            onTap: () => _launchUrl(context, 'https://discord.gg/grUDy44H77'),
+            onTap: () => _launchUrl(context, 'https://discord.gg/HsqzDNSDqg'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.telegram),
+            title: const Text('Telegram Channel'),
+            subtitle: const Text('Join our Telegram channel'),
+            onTap: () => _launchUrl(context, 'https://t.me/paperwiseofficial'),
           ),
           const Divider(indent: 16, endIndent: 16),
           ListTile(

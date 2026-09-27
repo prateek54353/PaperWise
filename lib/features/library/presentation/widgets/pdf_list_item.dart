@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:paperwise_pdf_maker/features/library/data/services/pdf_thumbnail_service.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 
-class PdfListItem extends ConsumerWidget {
+class PdfListItem extends ConsumerStatefulWidget {
   final PdfEntity pdf;
   final VoidCallback onTap;
   final VoidCallback onRename;
@@ -23,9 +25,34 @@ class PdfListItem extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PdfListItem> createState() => _PdfListItemState();
+}
+
+class _PdfListItemState extends ConsumerState<PdfListItem> {
+  final PdfThumbnailService _thumbnailService = PdfThumbnailService();
+  File? _thumbnailFile;
+  bool _isLoadingThumbnail = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    final thumbnail = await _thumbnailService.getThumbnailFile(widget.pdf.file);
+    if (mounted) {
+      setState(() {
+        _thumbnailFile = thumbnail;
+        _isLoadingThumbnail = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final libraryState = ref.watch(libraryProvider);
-    final isSelected = libraryState.isPdfSelected(pdf);
+    final isSelected = libraryState.isPdfSelected(widget.pdf);
     final isSelectionMode = libraryState.isSelectionMode;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -36,15 +63,15 @@ class PdfListItem extends ConsumerWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: isSelectionMode
-            ? () => ref.read(libraryProvider.notifier).togglePdfSelection(pdf)
-            : onTap,
+            ? () => ref.read(libraryProvider.notifier).togglePdfSelection(widget.pdf)
+            : widget.onTap,
         onLongPress: () {
           if (!isSelectionMode) {
-            ref.read(libraryProvider.notifier).togglePdfSelection(pdf);
+            ref.read(libraryProvider.notifier).togglePdfSelection(widget.pdf);
           }
         },
         child: Semantics(
-          label: 'PDF file: ${pdf.name}',
+          label: 'PDF file: ${widget.pdf.name}',
           selected: isSelected,
           button: true,
           child: Container(
@@ -56,12 +83,46 @@ class PdfListItem extends ConsumerWidget {
                   leading: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Icon(
-                        Icons.picture_as_pdf_outlined,
-                        size: 40,
-                        color: colorScheme.primary,
-                        semanticLabel: 'PDF icon',
-                      ),
+                      if (_thumbnailFile != null)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            _thumbnailFile!,
+                            width: 48,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.picture_as_pdf_outlined,
+                                size: 40,
+                                color: colorScheme.primary,
+                                semanticLabel: 'PDF icon',
+                              );
+                            },
+                          ),
+                        )
+                      else if (_isLoadingThumbnail)
+                        SizedBox(
+                          width: 48,
+                          height: 64,
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        )
+                      else
+                        Icon(
+                          Icons.picture_as_pdf_outlined,
+                          size: 40,
+                          color: colorScheme.primary,
+                          semanticLabel: 'PDF icon',
+                        ),
                       if (isSelectionMode)
                         Positioned.fill(
                           child: Container(
@@ -83,21 +144,21 @@ class PdfListItem extends ConsumerWidget {
                     ],
                   ),
                   title: Text(
-                    pdf.name,
+                    widget.pdf.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w500),
-                    semanticsLabel: 'PDF file name: ${pdf.name}',
+                    semanticsLabel: 'PDF file name: ${widget.pdf.name}',
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        DateFormat('MMM d, y • h:mm a').format(pdf.modifiedAt),
+                        DateFormat('MMM d, y • h:mm a').format(widget.pdf.modifiedAt),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Text(
-                        _formatFileSize(pdf.size),
+                        _formatFileSize(widget.pdf.size),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.secondary,
                         ),
@@ -122,7 +183,7 @@ class PdfListItem extends ConsumerWidget {
                                 ],
                               ),
                             ),
-                            if (onSplit != null)
+                            if (widget.onSplit != null)
                               PopupMenuItem(
                                 value: 'split',
                                 child: Row(
@@ -157,16 +218,16 @@ class PdfListItem extends ConsumerWidget {
                           onSelected: (value) {
                             switch (value) {
                               case 'rename':
-                                onRename();
+                                widget.onRename();
                                 break;
                               case 'split':
-                                onSplit?.call();
+                                widget.onSplit?.call();
                                 break;
                               case 'share':
-                                onShare();
+                                widget.onShare();
                                 break;
                               case 'delete':
-                                onDelete();
+                                widget.onDelete();
                                 break;
                             }
                           },

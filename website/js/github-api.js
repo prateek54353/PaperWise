@@ -3,7 +3,7 @@ const GITHUB_REPO = 'prateek54353/PaperWise';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
 
 // Discord Server Configuration
-const DISCORD_INVITE_URL = 'https://discord.gg/KjeTgENPbE';
+const DISCORD_INVITE_URL = 'https://discord.gg/HsqzDNSDqg';
 
 // Fetch GitHub Releases
 async function fetchGitHubReleases() {
@@ -33,7 +33,7 @@ async function updateDownloadSection() {
             <div class="version-details">
                 <div class="version-item">
                     <span class="version-label">Latest Version:</span>
-                    <span class="version-value">v2.6.3</span>
+                    <span class="version-value">v2.6.4</span>
                 </div>
                 <div class="version-item">
                     <span class="version-label">Released:</span>

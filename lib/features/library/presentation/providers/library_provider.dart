@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/models/failure.dart';
+import 'package:paperwise_pdf_maker/core/services/trash_service.dart';
 import 'package:paperwise_pdf_maker/features/library/application/library_facade.dart';
 import 'package:paperwise_pdf_maker/features/library/data/datasources/local_pdf_datasource.dart';
 import 'package:paperwise_pdf_maker/features/library/data/repositories/pdf_repository_impl.dart';
@@ -16,6 +17,7 @@ class LibraryState {
   final Set<String> selectedPdfPaths;
   final bool isSelectionMode;
   final SortOption sortOption;
+  final String searchQuery;
 
   const LibraryState({
     this.pdfs = const [],
@@ -24,10 +26,20 @@ class LibraryState {
     this.selectedPdfPaths = const {},
     this.isSelectionMode = false,
     this.sortOption = SortOption.date,
+    this.searchQuery = '',
   });
 
   List<PdfEntity> get sortedPdfs {
     var sorted = List<PdfEntity>.from(pdfs);
+    
+    // Filter by search query
+    if (searchQuery.isNotEmpty) {
+      sorted = sorted.where((pdf) => 
+        pdf.name.toLowerCase().contains(searchQuery.toLowerCase())
+      ).toList();
+    }
+    
+    // Sort
     if (sortOption == SortOption.name) {
       sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     } else {
@@ -51,6 +63,7 @@ class LibraryState {
     Set<String>? selectedPdfPaths,
     bool? isSelectionMode,
     SortOption? sortOption,
+    String? searchQuery,
   }) {
     return LibraryState(
       pdfs: pdfs ?? this.pdfs,
@@ -59,6 +72,7 @@ class LibraryState {
       selectedPdfPaths: selectedPdfPaths ?? this.selectedPdfPaths,
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       sortOption: sortOption ?? this.sortOption,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -81,6 +95,9 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   }
 
   Future<void> deletePdf(PdfEntity pdf) async {
+    // Move to trash instead of permanent delete
+    await TrashService.moveToTrash(pdf.file);
+    
     final result = await facade.deletePdf(pdf);
     result.fold(
       (failure) => state = state.copyWith(error: failure),
@@ -90,6 +107,18 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
         state = state.copyWith(pdfs: updatedPdfs, error: null);
       },
     );
+  }
+
+  Future<void> undoDeletePdf(PdfEntity pdf) async {
+    final restored = await TrashService.restoreFromTrash(pdf.file.path);
+    
+    if (restored) {
+      await loadPdfs();
+    } else {
+      state = state.copyWith(
+        error: const FileSystemFailure('Could not restore PDF from trash'),
+      );
+    }
   }
 
   Future<void> deleteSelectedPdfs() async {
@@ -182,6 +211,10 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
   }
 
   Future<Either<Failure, PdfEntity>> savePdfBytes(Uint8List pdfBytes, String fileName) async {
