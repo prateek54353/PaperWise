@@ -34,6 +34,7 @@ class PDFService {
     List<File> images,
     String fileName, {
     PageSizeMode pageSizeMode = PageSizeMode.a4,
+    void Function(String status, double? progress)? onProgress,
   }) async {
     try {
       final pdf = pw.Document();
@@ -45,7 +46,8 @@ class PDFService {
         PageSizeMode.legal: PdfPageFormat.legal,
       };
 
-      for (var image in images) {
+      for (var index = 0; index < images.length; index++) {
+        final image = images[index];
         final imageBytes = await image.readAsBytes();
         final pdfImage = pw.MemoryImage(imageBytes);
 
@@ -74,6 +76,10 @@ class PDFService {
             ),
           ),
         );
+        onProgress?.call(
+          'Preparing page ${index + 1} of ${images.length}...',
+          images.isEmpty ? 0 : 0.75 * (index + 1) / images.length,
+        );
       }
 
       // Get save location (always use default)
@@ -84,7 +90,11 @@ class PDFService {
           fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
       final file = File(path.join(saveLocation, sanitizedFileName));
 
-      await file.writeAsBytes(await pdf.save());
+      onProgress?.call('Building PDF...', null);
+      final pdfBytes = await pdf.save();
+      onProgress?.call('Saving PDF...', 0.9);
+      await file.writeAsBytes(pdfBytes);
+      onProgress?.call('PDF ready', 1);
       return file;
     } catch (e) {
       debugPrint('Error creating PDF: $e');

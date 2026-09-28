@@ -37,6 +37,7 @@ class _ImageFilterEditorScreenState extends State<ImageFilterEditorScreen> {
   bool _isLoading = true;
   bool _isPreviewLoading = false;
   bool _isSaving = false;
+  bool _isShowingOriginal = false;
   int _requestId = 0;
 
   @override
@@ -136,6 +137,7 @@ class _ImageFilterEditorScreenState extends State<ImageFilterEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit page'),
@@ -162,12 +164,66 @@ class _ImageFilterEditorScreenState extends State<ImageFilterEditorScreen> {
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      if (_previewBytes != null)
+                      if (_previewBytes != null &&
+                          _sourceBytes != null &&
+                          _selectedFilter != ScanImageFilter.original)
                         InteractiveViewer(
                           minScale: 0.75,
                           maxScale: 4,
-                          child:
-                              Image.memory(_previewBytes!, fit: BoxFit.contain),
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 140),
+                            child: Image.memory(
+                              _isShowingOriginal
+                                  ? _sourceBytes!
+                                  : _previewBytes!,
+                              key: ValueKey(_isShowingOriginal),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      if (_previewBytes != null &&
+                          _sourceBytes != null &&
+                          _selectedFilter != ScanImageFilter.original)
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: GestureDetector(
+                            onLongPressStart: (_) =>
+                                setState(() => _isShowingOriginal = true),
+                            onLongPressEnd: (_) =>
+                                setState(() => _isShowingOriginal = false),
+                            onLongPressCancel: () =>
+                                setState(() => _isShowingOriginal = false),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 120),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.92),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isShowingOriginal
+                                        ? Icons.visibility_outlined
+                                        : Icons.compare_arrows,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isShowingOriginal
+                                        ? 'Original'
+                                        : 'Hold to compare',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       if (_isPreviewLoading || _isSaving)
                         const ColoredBox(

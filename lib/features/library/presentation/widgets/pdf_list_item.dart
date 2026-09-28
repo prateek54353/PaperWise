@@ -40,12 +40,17 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
   }
 
   Future<void> _loadThumbnail() async {
-    final thumbnail = await _thumbnailService.getThumbnailFile(widget.pdf.file);
-    if (mounted) {
+    try {
+      final thumbnail =
+          await _thumbnailService.getThumbnailFile(widget.pdf.file);
+      if (!mounted) return;
       setState(() {
         _thumbnailFile = thumbnail;
         _isLoadingThumbnail = false;
       });
+    } catch (error) {
+      debugPrint('Could not load PDF thumbnail: $error');
+      if (mounted) setState(() => _isLoadingThumbnail = false);
     }
   }
 
@@ -63,7 +68,9 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: isSelectionMode
-            ? () => ref.read(libraryProvider.notifier).togglePdfSelection(widget.pdf)
+            ? () => ref
+                .read(libraryProvider.notifier)
+                .togglePdfSelection(widget.pdf)
             : widget.onTap,
         onLongPress: () {
           if (!isSelectionMode) {
@@ -75,7 +82,9 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
           selected: isSelected,
           button: true,
           child: Container(
-            color: isSelected ? colorScheme.primaryContainer.withValues(alpha: 0.2) : null,
+            color: isSelected
+                ? colorScheme.primaryContainer.withValues(alpha: 0.2)
+                : null,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -83,52 +92,52 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                   leading: Stack(
                     alignment: Alignment.center,
                     children: [
-                      if (_thumbnailFile != null)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            _thumbnailFile!,
-                            width: 48,
-                            height: 64,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.picture_as_pdf_outlined,
-                                size: 40,
-                                color: colorScheme.primary,
-                                semanticLabel: 'PDF icon',
-                              );
-                            },
-                          ),
-                        )
-                      else if (_isLoadingThumbnail)
-                        SizedBox(
-                          width: 48,
-                          height: 64,
-                          child: Center(
-                            child: SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ),
-                        )
-                      else
-                        Icon(
-                          Icons.picture_as_pdf_outlined,
-                          size: 40,
-                          color: colorScheme.primary,
-                          semanticLabel: 'PDF icon',
-                        ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 180),
+                        child: _thumbnailFile != null
+                            ? ClipRRect(
+                                key: const ValueKey('thumbnail-ready'),
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  _thumbnailFile!,
+                                  width: 48,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 40,
+                                    color: colorScheme.primary,
+                                    semanticLabel: 'PDF icon',
+                                  ),
+                                ),
+                              )
+                            : _isLoadingThumbnail
+                                ? Container(
+                                    key: const ValueKey('thumbnail-loading'),
+                                    width: 48,
+                                    height: 64,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  )
+                                : Icon(
+                                    key: const ValueKey('thumbnail-fallback'),
+                                    Icons.picture_as_pdf_outlined,
+                                    size: 40,
+                                    color: colorScheme.primary,
+                                    semanticLabel: 'PDF icon',
+                                  ),
+                      ),
                       if (isSelectionMode)
                         Positioned.fill(
                           child: Container(
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? colorScheme.primaryContainer.withValues(alpha: 0.8)
+                                  ? colorScheme.primaryContainer
+                                      .withValues(alpha: 0.8)
                                   : Colors.transparent,
                               shape: BoxShape.circle,
                             ),
@@ -138,7 +147,8 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                                     color: colorScheme.primary,
                                     semanticLabel: 'Selected',
                                   )
-                                : const Icon(Icons.circle_outlined, semanticLabel: 'Not selected'),
+                                : const Icon(Icons.circle_outlined,
+                                    semanticLabel: 'Not selected'),
                           ),
                         ),
                     ],
@@ -154,14 +164,15 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        DateFormat('MMM d, y • h:mm a').format(widget.pdf.modifiedAt),
+                        DateFormat('MMM d, y • h:mm a')
+                            .format(widget.pdf.modifiedAt),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       Text(
                         _formatFileSize(widget.pdf.size),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.secondary,
-                        ),
+                              color: colorScheme.secondary,
+                            ),
                       ),
                     ],
                   ),
@@ -177,9 +188,12 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                               value: 'rename',
                               child: Row(
                                 children: [
-                                  Icon(Icons.drive_file_rename_outline, color: colorScheme.primary),
+                                  Icon(Icons.drive_file_rename_outline,
+                                      color: colorScheme.primary),
                                   const SizedBox(width: 8),
-                                  Text('Rename', style: TextStyle(color: colorScheme.primary)),
+                                  Text('Rename',
+                                      style: TextStyle(
+                                          color: colorScheme.primary)),
                                 ],
                               ),
                             ),
@@ -188,9 +202,12 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                                 value: 'split',
                                 child: Row(
                                   children: [
-                                    Icon(Icons.call_split, color: colorScheme.tertiary),
+                                    Icon(Icons.call_split,
+                                        color: colorScheme.tertiary),
                                     const SizedBox(width: 8),
-                                    Text('Split', style: TextStyle(color: colorScheme.tertiary)),
+                                    Text('Split',
+                                        style: TextStyle(
+                                            color: colorScheme.tertiary)),
                                   ],
                                 ),
                               ),
@@ -198,9 +215,12 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                               value: 'share',
                               child: Row(
                                 children: [
-                                  Icon(Icons.share_outlined, color: colorScheme.secondary),
+                                  Icon(Icons.share_outlined,
+                                      color: colorScheme.secondary),
                                   const SizedBox(width: 8),
-                                  Text('Share', style: TextStyle(color: colorScheme.secondary)),
+                                  Text('Share',
+                                      style: TextStyle(
+                                          color: colorScheme.secondary)),
                                 ],
                               ),
                             ),
@@ -208,9 +228,12 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                               value: 'delete',
                               child: Row(
                                 children: [
-                                  Icon(Icons.delete_outline, color: colorScheme.error),
+                                  Icon(Icons.delete_outline,
+                                      color: colorScheme.error),
                                   const SizedBox(width: 8),
-                                  Text('Delete', style: TextStyle(color: colorScheme.error)),
+                                  Text('Delete',
+                                      style:
+                                          TextStyle(color: colorScheme.error)),
                                 ],
                               ),
                             ),

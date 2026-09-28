@@ -2,10 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:paperwise_pdf_maker/core/commands/command_history.dart';
@@ -35,6 +37,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   final CommandHistory _commandHistory = CommandHistory();
   bool _isProcessing = false;
   String _processingStatus = '';
+  double? _processingProgress;
   PageSizeMode _pageSizeMode = PageSizeMode.fit;
   String _scanName = 'New Scan';
 
@@ -125,6 +128,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                 ),
                               );
                             });
+                            if (oldIndex != newIndex) {
+                              unawaited(HapticFeedback.selectionClick());
+                            }
                           },
                           onDelete: (index) {
                             setState(() {
@@ -143,7 +149,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               ],
             ),
           ),
-          if (_isProcessing) _ProcessingOverlay(status: _processingStatus),
+          if (_isProcessing)
+            _ProcessingOverlay(
+              status: _processingStatus,
+              progress: _processingProgress,
+            ),
         ],
       ),
     );
@@ -209,7 +219,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       if (mode == 'freeform') {
         result = await Navigator.of(context).push<File>(
           MaterialPageRoute(
-            builder: (_) => FreeformCropScreen(imageFile: _selectedImages[index]),
+            builder: (_) =>
+                FreeformCropScreen(imageFile: _selectedImages[index]),
           ),
         );
       } else {
@@ -231,7 +242,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         setState(() {
           _processingStatus = 'Compressing image...';
         });
-        
+
         final compressionLevel =
             ref.read(settingsProvider).settings.compressionLevel;
         final compressedFile =
@@ -332,12 +343,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     if (source != null && mounted) {
       // Check storage permission for gallery access
       if (source == ImageSource.gallery) {
-        final hasPermission = await PermissionHandler.requestStoragePermission(context);
+        final hasPermission =
+            await PermissionHandler.requestStoragePermission(context);
         if (!hasPermission) {
           return;
         }
       }
-      
+
       final picker = ImagePicker();
       final compressionLevel =
           ref.read(settingsProvider).settings.compressionLevel;
@@ -396,39 +408,55 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     setState(() {
       _isProcessing = true;
       _processingStatus = 'Preparing images...';
+      _processingProgress = 0;
       _commandHistory.clear(); // Clear history on PDF generation
     });
 
     try {
       final fileName = '$pdfName.pdf';
-      
-      // Show progress for multi-page PDFs
-      final totalImages = _selectedImages.length;
-      for (int i = 0; i < totalImages; i++) {
-        if (mounted) {
-          setState(() {
-            _processingStatus = 'Processing page ${i + 1} of $totalImages...';
-          });
-        }
-        // Small delay to allow UI to update
-        await Future.delayed(const Duration(milliseconds: 50));
-      }
-      
-      setState(() {
-        _processingStatus = 'Generating PDF...';
-      });
-      
-      await _pdfService.createPdfFromImages(
+
+      final pdfFile = await _pdfService.createPdfFromImages(
         _selectedImages,
         fileName,
         pageSizeMode: _pageSizeMode,
+        onProgress: (status, progress) {
+          if (!mounted) return;
+          setState(() {
+            _processingStatus = status;
+            _processingProgress = progress;
+          });
+        },
       );
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('PDF generated successfully!')),
+      final action = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          icon: const Icon(Icons.task_alt_rounded),
+          title: const Text('Your PDF is ready'),
+          content: const Text('Your document has been saved to your library.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, 'done'),
+              child: const Text('Done'),
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, 'share'),
+              icon: const Icon(Icons.share_outlined),
+              label: const Text('Share'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(dialogContext, 'open'),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open PDF'),
+            ),
+          ],
+        ),
       );
-      Navigator.pop(context, true);
+      if (!mounted) return;
+      if (action == 'share') await _pdfService.sharePDF(pdfFile);
+      if (action == 'open') await OpenFilex.open(pdfFile.path);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
       ErrorHandler.showError(
@@ -627,7 +655,9 @@ class _ScanBottomControls extends StatelessWidget {
 
 class _ProcessingOverlay extends StatelessWidget {
   final String status;
-  const _ProcessingOverlay({required this.status});
+  final double? progress;
+
+  const _ProcessingOverlay({required this.status, required this.progress});
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -636,8 +666,11 @@ class _ProcessingOverlay extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
+            SizedBox(
+              width: 240,
+              child: LinearProgressIndicator(value: progress),
+            ),
+            const SizedBox(height: 20),
             Text(
               status,
               style: const TextStyle(color: Colors.white),

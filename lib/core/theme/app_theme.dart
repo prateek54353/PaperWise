@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+const _paperWiseBrandSeed = Color(0xFFB75D70);
+
 class AppTheme {
   AppTheme._();
 
   static ThemeData lightTheme(bool useAmoledTheme) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.blue,
+      seedColor: _paperWiseBrandSeed,
       brightness: Brightness.light,
     );
 
@@ -27,7 +29,8 @@ class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme:
+          const SnackBarThemeData(behavior: SnackBarBehavior.floating),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),
@@ -36,7 +39,7 @@ class AppTheme {
 
   static ThemeData darkTheme(bool useAmoledTheme) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.blue,
+      seedColor: _paperWiseBrandSeed,
       brightness: Brightness.dark,
       surface: useAmoledTheme ? Colors.black : null,
     );
@@ -59,7 +62,8 @@ class AppTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+      snackBarTheme:
+          const SnackBarThemeData(behavior: SnackBarBehavior.floating),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),
       ),

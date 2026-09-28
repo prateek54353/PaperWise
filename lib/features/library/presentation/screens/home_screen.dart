@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
 import 'package:paperwise_pdf_maker/core/utils/error_handler.dart';
 import 'package:paperwise_pdf_maker/features/library/domain/entities/pdf_entity.dart';
-import 'package:paperwise_pdf_maker/features/library/domain/repositories/pdf_repository.dart' show SortOption;
+import 'package:paperwise_pdf_maker/features/library/domain/repositories/pdf_repository.dart'
+    show SortOption;
 import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_merge_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/presentation/screens/pdf_split_screen.dart';
@@ -90,10 +91,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (newName != null && mounted) {
       ErrorHandler.showLoading(context, 'Renaming PDF...');
-      
+
       await ref.read(libraryProvider.notifier).renamePdf(pdf, newName);
       await ref.read(libraryProvider.notifier).loadPdfs();
-      
+
       if (mounted) {
         ErrorHandler.hideLoading(context);
         ErrorHandler.showSuccess(context, 'PDF renamed successfully');
@@ -127,12 +128,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (mounted) {
       ErrorHandler.showLoading(context, 'Deleting PDF...');
-      
+
       await ref.read(libraryProvider.notifier).deletePdf(pdf);
-      
+
       if (mounted) {
         ErrorHandler.hideLoading(context);
-        
+
         // Show SnackBar with undo option
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -155,14 +156,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _sharePdf(PdfEntity pdf) async {
     ErrorHandler.showLoading(context, 'Preparing PDF for sharing...');
-    
+
     await ref.read(libraryProvider.notifier).sharePdf(pdf);
-    
+
     // Check for errors after the operation
     if (mounted) {
       final libraryState = ref.read(libraryProvider);
       ErrorHandler.hideLoading(context);
-      
+
       if (libraryState.error != null) {
         ErrorHandler.showError(context, libraryState.error!);
         ref.read(libraryProvider.notifier).clearError();
@@ -196,17 +197,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     if (shouldDelete == true && mounted) {
       ErrorHandler.showLoading(
-        context, 
+        context,
         'Deleting $selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'}...',
         duration: const Duration(seconds: 60),
       );
-      
+
       await ref.read(libraryProvider.notifier).deleteSelectedPdfs();
-      
+
       if (mounted) {
         ErrorHandler.hideLoading(context);
         ErrorHandler.showSuccess(
-          context, 
+          context,
           '$selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} deleted',
         );
       }
@@ -215,7 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Future<void> _shareSelectedPDFs() async {
     final selectedCount = ref.read(libraryProvider).selectedCount;
-    
+
     // Show loading indicator for batch operations
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
@@ -228,15 +229,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
             const SizedBox(width: 16),
-            Text('Preparing $selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} for sharing...'),
+            Text(
+                'Preparing $selectedCount ${selectedCount == 1 ? 'PDF' : 'PDFs'} for sharing...'),
           ],
         ),
         duration: const Duration(seconds: 60),
       ),
     );
-    
+
     await ref.read(libraryProvider.notifier).shareSelectedPdfs();
-    
+
     if (mounted) {
       messenger.clearSnackBars();
     }
@@ -284,7 +286,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   hintText: 'Search PDFs...',
                   border: InputBorder.none,
                   hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.6),
                   ),
                 ),
                 style: TextStyle(
@@ -426,27 +431,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ErrorHandler.showSuccess(ctx, 'Library refreshed');
           }
         },
-        child: libraryState.isLoading
-            ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Loading PDFs...'),
-                  ],
-                ),
-              )
-            : libraryState.sortedPdfs.isEmpty
-                ? _HomeEmptyState(searchQuery: libraryState.searchQuery)
-                : _PdfListView(
-                    pdfs: libraryState.sortedPdfs,
-                    onOpen: _openPDF,
-                    onDelete: _deletePDF,
-                    onRename: _renamePdf,
-                    onShare: _sharePdf,
-                    onSplit: _splitPdf,
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: libraryState.isLoading
+              ? const KeyedSubtree(
+                  key: ValueKey('library-loading'),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('Loading PDFs...'),
+                      ],
+                    ),
                   ),
+                )
+              : libraryState.sortedPdfs.isEmpty
+                  ? _HomeEmptyState(
+                      key: const ValueKey('library-empty'),
+                      searchQuery: libraryState.searchQuery,
+                    )
+                  : _PdfListView(
+                      key: const ValueKey('library-list'),
+                      pdfs: libraryState.sortedPdfs,
+                      onOpen: _openPDF,
+                      onDelete: _deletePDF,
+                      onRename: _renamePdf,
+                      onShare: _sharePdf,
+                      onSplit: _splitPdf,
+                    ),
+        ),
       ),
     );
   }
@@ -455,13 +472,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 class _HomeEmptyState extends StatelessWidget {
   final String searchQuery;
 
-  const _HomeEmptyState({this.searchQuery = ''});
+  const _HomeEmptyState({super.key, this.searchQuery = ''});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isSearchResult = searchQuery.isNotEmpty;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -480,7 +497,7 @@ class _HomeEmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            isSearchResult 
+            isSearchResult
                 ? 'No PDFs match "$searchQuery"'
                 : 'Tap "New Scan" to create your first PDF',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -503,6 +520,7 @@ class _PdfListView extends StatelessWidget {
   final void Function(PdfEntity pdf)? onSplit;
 
   const _PdfListView({
+    super.key,
     required this.pdfs,
     required this.onOpen,
     required this.onDelete,
@@ -541,7 +559,8 @@ class _PdfListView extends StatelessWidget {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: const Text('Delete PDF?'),
-                  content: Text('Are you sure you want to delete "${pdf.name}"?'),
+                  content:
+                      Text('Are you sure you want to delete "${pdf.name}"?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -569,7 +588,10 @@ class _PdfListView extends StatelessWidget {
               onSplit: onSplit != null ? () => onSplit!(pdf) : null,
             )
                 .animate()
-                .fadeIn(duration: 300.ms, delay: (100 * index).ms)
+                .fadeIn(
+                  duration: 250.ms,
+                  delay: (35 * (index < 4 ? index : 4)).ms,
+                )
                 .slideX(begin: -0.2),
           ),
         );
