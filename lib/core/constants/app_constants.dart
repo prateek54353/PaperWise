@@ -4,7 +4,7 @@ class AppConstants {
 
   // App Info
   static const String appName = 'Paperwise';
-  static const String appVersion = '2.7.0';
+  static const String appVersion = '2.7.1';
   static const String contactEmail = 'aishwarprateek@gmail.com';
 
   // Storage
