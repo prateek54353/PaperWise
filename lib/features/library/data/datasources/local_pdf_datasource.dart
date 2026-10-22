@@ -151,8 +151,9 @@ class LocalPdfDataSource implements PdfDataSource {
           try {
             final page = await pdfDoc.getPage(i);
             
-            // Try rendering with different resolutions
-            List<int> resolutions = [2, 1, 3];
+            // Try rendering with progressively higher resolutions for better quality
+            // Start with high resolution (3x) for best quality, fall back if needed
+            List<int> resolutions = [3, 2, 1];
             Uint8List? pageBytes;
             
             for (final resolution in resolutions) {
@@ -163,9 +164,11 @@ class LocalPdfDataSource implements PdfDataSource {
                 );
                 pageBytes = pageImage?.bytes;
                 if (pageBytes != null && pageBytes.isNotEmpty) {
+                  debugPrint('Rendered page $i from $pdfPath at ${resolution}x resolution');
                   break;
                 }
               } catch (renderError) {
+                debugPrint('Render failed at ${resolution}x for page $i: $renderError');
                 continue;
               }
             }
@@ -175,9 +178,14 @@ class LocalPdfDataSource implements PdfDataSource {
               mergedPdf.addPage(
                 pw.Page(
                   pageFormat: PdfPageFormat(page.width.toDouble(), page.height.toDouble()),
-                  build: (context) => pw.Image(pdfImage),
+                  build: (context) => pw.Image(
+                    pdfImage,
+                    fit: pw.BoxFit.contain,
+                  ),
                 ),
               );
+            } else {
+              debugPrint('Failed to render page $i from $pdfPath at any resolution');
             }
           } catch (pageError) {
             debugPrint('Error processing page $i from $pdfPath: $pageError');

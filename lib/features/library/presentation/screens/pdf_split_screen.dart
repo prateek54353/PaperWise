@@ -122,8 +122,8 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           try {
             final page = await pdfDoc.getPage(pageIndex);
             
-            // Try rendering with different resolutions
-            List<int> resolutions = [2, 1, 3];
+            // Try rendering with progressively higher resolutions for better quality
+            List<int> resolutions = [3, 2, 1];
             Uint8List? pageBytes;
             
             for (final resolution in resolutions) {
@@ -134,9 +134,11 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
                 );
                 pageBytes = pageImage?.bytes;
                 if (pageBytes != null && pageBytes.isNotEmpty) {
+                  debugPrint('Rendered page $pageIndex at ${resolution}x resolution');
                   break;
                 }
               } catch (renderError) {
+                debugPrint('Render failed at ${resolution}x for page $pageIndex: $renderError');
                 continue;
               }
             }
@@ -146,10 +148,15 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
               mergedPdf.addPage(
                 pw.Page(
                   pageFormat: PdfPageFormat(page.width.toDouble(), page.height.toDouble()),
-                  build: (context) => pw.Image(pdfImage),
+                  build: (context) => pw.Image(
+                    pdfImage,
+                    fit: pw.BoxFit.contain,
+                  ),
                 ),
               );
               pageCount++;
+            } else {
+              debugPrint('Failed to render page $pageIndex at any resolution');
             }
           } catch (pageError) {
             debugPrint('Error processing page $pageIndex: $pageError');
@@ -180,8 +187,8 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
           try {
             final page = await pdfDoc.getPage(pageIndex);
             
-            // Try rendering with different resolutions
-            List<int> resolutions = [2, 1, 3];
+            // Try rendering with progressively higher resolutions for better quality
+            List<int> resolutions = [3, 2, 1];
             Uint8List? pageBytes;
             
             for (final resolution in resolutions) {
@@ -192,9 +199,11 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
                 );
                 pageBytes = pageImage?.bytes;
                 if (pageBytes != null && pageBytes.isNotEmpty) {
+                  debugPrint('Rendered page $pageIndex at ${resolution}x resolution');
                   break;
                 }
               } catch (renderError) {
+                debugPrint('Render failed at ${resolution}x for page $pageIndex: $renderError');
                 continue;
               }
             }
@@ -206,7 +215,10 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
               newPdf.addPage(
                 pw.Page(
                   pageFormat: PdfPageFormat(page.width.toDouble(), page.height.toDouble()),
-                  build: (context) => pw.Image(pdfImage),
+                  build: (context) => pw.Image(
+                    pdfImage,
+                    fit: pw.BoxFit.contain,
+                  ),
                 ),
               );
 
@@ -226,6 +238,8 @@ class _PdfSplitScreenState extends ConsumerState<PdfSplitScreen> {
                   createdPdfs.add(pdfEntity);
                 },
               );
+            } else {
+              debugPrint('Failed to render page $pageIndex at any resolution');
             }
           } catch (pageError) {
             debugPrint('Error processing page $pageIndex: $pageError');

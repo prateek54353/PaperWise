@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 /// Common loading indicator widget
 class AppLoadingIndicator extends StatelessWidget {
   final String? message;
+  final double size;
 
-  const AppLoadingIndicator({super.key, this.message});
+  const AppLoadingIndicator({
+    super.key,
+    this.message,
+    this.size = 40,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -12,7 +17,11 @@ class AppLoadingIndicator extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(),
+          SizedBox(
+            width: size,
+            height: size,
+            child: const CircularProgressIndicator(),
+          ),
           if (message != null) ...[
             const SizedBox(height: 16),
             Text(
@@ -22,6 +31,34 @@ class AppLoadingIndicator extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Full-screen loading overlay
+class LoadingOverlay extends StatelessWidget {
+  final String? message;
+  final bool isLoading;
+  final Widget child;
+
+  const LoadingOverlay({
+    super.key,
+    this.message,
+    required this.isLoading,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        if (isLoading)
+          Container(
+            color: Colors.black.withValues(alpha: 0.3),
+            child: AppLoadingIndicator(message: message),
+          ),
+      ],
     );
   }
 }

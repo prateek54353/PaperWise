@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -80,9 +81,16 @@ class LibraryState {
 // Notifier
 class LibraryNotifier extends StateNotifier<LibraryState> {
   final LibraryFacade facade;
+  Timer? _searchDebounce;
 
   LibraryNotifier(this.facade) : super(const LibraryState()) {
     loadPdfs();
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 
   Future<void> loadPdfs() async {
@@ -201,10 +209,6 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     }
   }
 
-  void clearSelection() {
-    state = state.copyWith(selectedPdfPaths: {}, isSelectionMode: false);
-  }
-
   void setSortOption(SortOption option) {
     state = state.copyWith(sortOption: option);
   }
@@ -214,7 +218,25 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
   }
 
   void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      state = state.copyWith(searchQuery: query);
+    });
+  }
+
+  void selectAll() {
+    final allPaths = state.pdfs.map((pdf) => pdf.file.path).toSet();
+    state = state.copyWith(
+      selectedPdfPaths: allPaths,
+      isSelectionMode: true,
+    );
+  }
+
+  void clearSelection() {
+    state = state.copyWith(
+      selectedPdfPaths: {},
+      isSelectionMode: false,
+    );
   }
 
   Future<Either<Failure, PdfEntity>> savePdfBytes(Uint8List pdfBytes, String fileName) async {

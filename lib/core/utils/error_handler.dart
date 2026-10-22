@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/failure.dart';
+import '../services/crashlytics_service.dart';
 
 /// Centralized error handler for consistent error display across the app
 class ErrorHandler {
@@ -11,6 +12,17 @@ class ErrorHandler {
     Duration duration = const Duration(seconds: 4),
   }) {
     if (!context.mounted) return;
+
+    // Log error to Crashlytics for debugging
+    CrashlyticsService.recordError(
+      failure,
+      StackTrace.current,
+      context: {
+        'message': failure.message,
+        'userFriendlyMessage': failure.userFriendlyMessage,
+        'code': failure.code?.toString(),
+      },
+    );
 
     final messenger = ScaffoldMessenger.of(context);
     

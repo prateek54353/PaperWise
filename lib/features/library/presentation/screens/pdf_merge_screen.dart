@@ -40,9 +40,10 @@ class _PdfMergeScreenState extends ConsumerState<PdfMergeScreen> {
         
         if (pdfDoc.pagesCount > 0) {
           final page = await pdfDoc.getPage(1);
+          // Render at higher resolution for better quality preview
           final pageImage = await page.render(
-            width: 300,
-            height: 400,
+            width: 300 * 2, // 2x for better quality
+            height: 400 * 2,
           );
           
           if (pageImage?.bytes != null) {

@@ -69,6 +69,9 @@ class TrashService {
       _trashFiles.remove(originalPath);
       _cachedFiles.remove(trashPath.path);
       
+      // Also clean up original file reference from cache
+      _cachedFiles.removeWhere((key, value) => value.path == originalPath);
+      
       return true;
     } catch (e) {
       return false;
@@ -88,6 +91,9 @@ class TrashService {
       _trashFiles.remove(originalPath);
       _cachedFiles.remove(trashPath.path);
     }
+    
+    // Clean up original file reference from cache to prevent memory leaks
+    _cachedFiles.removeWhere((key, value) => value.path == originalPath);
   }
 
   /// Empty the trash (call this on app startup)
@@ -110,6 +116,34 @@ class TrashService {
     
     _trashFiles.clear();
     _cachedFiles.clear();
+  }
+
+  /// Clean up stale entries from internal maps (call periodically to prevent memory leaks)
+  /// This removes entries where the trash file no longer exists
+  static Future<void> cleanupStaleEntries() async {
+    // Clean up trash files map
+    final staleTrashKeys = <String>[];
+    for (final entry in _trashFiles.entries) {
+      if (!await entry.value.exists()) {
+        staleTrashKeys.add(entry.key);
+      }
+    }
+    for (final key in staleTrashKeys) {
+      _trashFiles.remove(key);
+      _undoTimers[key]?.cancel();
+      _undoTimers.remove(key);
+    }
+    
+    // Clean up cached files map
+    final staleCacheKeys = <String>[];
+    for (final entry in _cachedFiles.entries) {
+      if (!await entry.value.exists()) {
+        staleCacheKeys.add(entry.key);
+      }
+    }
+    for (final key in staleCacheKeys) {
+      _cachedFiles.remove(key);
+    }
   }
 
   /// Get trash file path for a given original path

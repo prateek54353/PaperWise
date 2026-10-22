@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:async';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:paperwise_pdf_maker/core/widgets/common_widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -21,6 +23,7 @@ class _CameraScanScreenState extends State<CameraScanScreen> with WidgetsBinding
   bool _flashOn = false;
   int _cameraIndex = 0;
   bool _autoCapture = false;
+  bool _showGuides = true;
   Timer? _autoTimer;
 
   @override
@@ -102,11 +105,20 @@ class _CameraScanScreenState extends State<CameraScanScreen> with WidgetsBinding
       final target = File(p.join(dir.path, 'scan_${DateTime.now().millisecondsSinceEpoch}.jpg'));
       await File(xfile.path).copy(target.path);
       _capturedFiles.add(target);
+      HapticFeedback.lightImpact();
       setState(() {});
     } catch (_) {
     } finally {
       if (mounted) setState(() => _isBusy = false);
     }
+  }
+
+  void _undoCapture() {
+    if (_capturedFiles.isEmpty) return;
+    setState(() {
+      _capturedFiles.removeLast();
+    });
+    HapticFeedback.mediumImpact();
   }
 
   void _finish() {
@@ -131,30 +143,59 @@ class _CameraScanScreenState extends State<CameraScanScreen> with WidgetsBinding
       appBar: AppBar(
         title: const Text('Scan with Camera'),
         actions: [
-          IconButton(
-            icon: Icon(_flashOn ? Icons.flash_on : Icons.flash_off),
-            onPressed: _toggleFlash,
+          Semantics(
+            button: true,
+            label: _flashOn ? 'Turn flash off' : 'Turn flash on',
+            child: IconButton(
+              icon: Icon(_flashOn ? Icons.flash_on : Icons.flash_off),
+              tooltip: _flashOn ? 'Flash On' : 'Flash Off',
+              onPressed: _toggleFlash,
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.cameraswitch_outlined),
-            onPressed: _switchCamera,
+          Semantics(
+            button: true,
+            label: 'Switch camera',
+            child: IconButton(
+              icon: const Icon(Icons.cameraswitch_outlined),
+              tooltip: 'Switch Camera',
+              onPressed: _switchCamera,
+            ),
           ),
-          IconButton(
-            icon: Icon(_autoCapture ? Icons.motion_photos_auto : Icons.motion_photos_off),
-            tooltip: 'Auto-Capture',
-            onPressed: _toggleAuto,
+          Semantics(
+            button: true,
+            label: _showGuides ? 'Hide document guides' : 'Show document guides',
+            child: IconButton(
+              icon: Icon(_showGuides ? Icons.crop_free : Icons.crop_free_outlined),
+              tooltip: 'Toggle Guides',
+              onPressed: () => setState(() => _showGuides = !_showGuides),
+            ),
           ),
-          TextButton(
-            onPressed: _capturedFiles.isEmpty ? null : _finish,
-            child: const Text('Done'),
+          Semantics(
+            button: true,
+            label: _autoCapture ? 'Disable auto capture' : 'Enable auto capture',
+            child: IconButton(
+              icon: Icon(_autoCapture ? Icons.motion_photos_auto : Icons.motion_photos_off),
+              tooltip: 'Auto-Capture',
+              onPressed: _toggleAuto,
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: _capturedFiles.isEmpty ? 'No images captured, button disabled' : 'Finish scanning',
+            enabled: _capturedFiles.isNotEmpty,
+            child: TextButton(
+              onPressed: _capturedFiles.isEmpty ? null : _finish,
+              child: const Text('Done'),
+            ),
           ),
         ],
       ),
       body: !_isInitialized
-          ? const Center(child: CircularProgressIndicator())
+          ? const AppLoadingIndicator(message: 'Initializing camera...')
           : Stack(
               children: [
                 Positioned.fill(child: CameraPreview(_controller!)),
+                if (_showGuides) _buildDocumentGuides(),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Padding(
@@ -162,9 +203,28 @@ class _CameraScanScreenState extends State<CameraScanScreen> with WidgetsBinding
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        FloatingActionButton.large(
-                          onPressed: _capture,
-                          child: const Icon(Icons.camera),
+                        if (_capturedFiles.isNotEmpty)
+                          Semantics(
+                            button: true,
+                            label: 'Undo last capture',
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 16.0),
+                              child: FloatingActionButton.small(
+                                heroTag: 'undo-capture',
+                                tooltip: 'Undo Last Capture',
+                                onPressed: _undoCapture,
+                                child: const Icon(Icons.undo),
+                              ),
+                            ),
+                          ),
+                        Semantics(
+                          button: true,
+                          label: 'Capture photo',
+                          child: FloatingActionButton.large(
+                            tooltip: 'Capture Photo',
+                            onPressed: _capture,
+                            child: const Icon(Icons.camera),
+                          ),
                         ),
                       ],
                     ),
@@ -187,5 +247,109 @@ class _CameraScanScreenState extends State<CameraScanScreen> with WidgetsBinding
             ),
     );
   }
+
+  Widget _buildDocumentGuides() {
+    return IgnorePointer(
+      child: Container(
+        color: Colors.transparent,
+        child: CustomPaint(
+          size: Size.infinite,
+          painter: _DocumentGuidePainter(),
+        ),
+      ),
+    );
+  }
+}
+
+class _DocumentGuidePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final cornerPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.8)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4;
+
+    final margin = 40.0;
+    final cornerLength = 60.0;
+
+    // Draw document frame (rectangle with corners)
+    final rect = Rect.fromLTWH(
+      margin,
+      margin,
+      size.width - (margin * 2),
+      size.height - (margin * 2),
+    );
+
+    // Draw corner guides
+    // Top-left
+    canvas.drawLine(
+      Offset(rect.left, rect.top),
+      Offset(rect.left + cornerLength, rect.top),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(rect.left, rect.top),
+      Offset(rect.left, rect.top + cornerLength),
+      cornerPaint,
+    );
+
+    // Top-right
+    canvas.drawLine(
+      Offset(rect.right - cornerLength, rect.top),
+      Offset(rect.right, rect.top),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(rect.right, rect.top),
+      Offset(rect.right, rect.top + cornerLength),
+      cornerPaint,
+    );
+
+    // Bottom-left
+    canvas.drawLine(
+      Offset(rect.left, rect.bottom - cornerLength),
+      Offset(rect.left, rect.bottom),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(rect.left, rect.bottom),
+      Offset(rect.left + cornerLength, rect.bottom),
+      cornerPaint,
+    );
+
+    // Bottom-right
+    canvas.drawLine(
+      Offset(rect.right - cornerLength, rect.bottom),
+      Offset(rect.right, rect.bottom),
+      cornerPaint,
+    );
+    canvas.drawLine(
+      Offset(rect.right, rect.bottom - cornerLength),
+      Offset(rect.right, rect.bottom),
+      cornerPaint,
+    );
+
+    // Draw center crosshair
+    final center = rect.center;
+    final crosshairSize = 20.0;
+    canvas.drawLine(
+      Offset(center.dx - crosshairSize, center.dy),
+      Offset(center.dx + crosshairSize, center.dy),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(center.dx, center.dy - crosshairSize),
+      Offset(center.dx, center.dy + crosshairSize),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 

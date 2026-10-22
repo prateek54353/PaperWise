@@ -79,6 +79,8 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
         },
         child: Semantics(
           label: 'PDF file: ${widget.pdf.name}',
+          value: '${_formatFileSize(widget.pdf.size)}, ${DateFormat('MMM d, y').format(widget.pdf.modifiedAt)}',
+          hint: isSelected ? 'Double tap to deselect' : 'Double tap to open, long press to select',
           selected: isSelected,
           button: true,
           child: Container(
@@ -158,7 +160,6 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w500),
-                    semanticsLabel: 'PDF file name: ${widget.pdf.name}',
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,12 +168,14 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                         DateFormat('MMM d, y • h:mm a')
                             .format(widget.pdf.modifiedAt),
                         style: Theme.of(context).textTheme.bodySmall,
+                        semanticsLabel: 'Modified ${DateFormat('MMM d, y').format(widget.pdf.modifiedAt)}',
                       ),
                       Text(
                         _formatFileSize(widget.pdf.size),
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: colorScheme.secondary,
                             ),
+                        semanticsLabel: 'File size: ${_formatFileSize(widget.pdf.size)}',
                       ),
                     ],
                   ),

@@ -141,6 +141,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                 ),
                               );
                             });
+                            HapticFeedback.heavyImpact();
                           },
                           onCrop: (index) => _cropImage(index),
                           onEdit: (index) => _editImage(index),
@@ -284,6 +285,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           ),
         );
       });
+      HapticFeedback.lightImpact();
     }
   }
 

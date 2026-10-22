@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 /// Centralized permission handler for consistent permission requests
 class PermissionHandler {
@@ -138,14 +140,17 @@ class PermissionHandler {
 
   /// Check if running on Android 13 or higher
   static Future<bool> _isAndroid13OrHigher() async {
-    // This is a simplified check - in production you'd want to use device_info_plus
-    // For now, we'll assume we need to handle both cases
+    if (!Platform.isAndroid) return false;
+    
     try {
-      // Try to request photos permission (Android 13+)
-      final status = await Permission.photos.status;
-      return status != PermissionStatus.denied;
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      // Android 13 is API level 33
+      return androidInfo.version.sdkInt >= 33;
     } catch (e) {
-      return false;
+      debugPrint('Error detecting Android version: $e');
+      // Fallback to conservative behavior - assume Android 13+ if unsure
+      return true;
     }
   }
 
