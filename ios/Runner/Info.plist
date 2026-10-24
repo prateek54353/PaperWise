@@ -47,7 +47,5 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>This app uses the camera to scan documents.</string>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
 </dict>
 </plist>

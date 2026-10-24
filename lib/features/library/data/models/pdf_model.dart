@@ -7,6 +7,8 @@ class PdfModel {
   final DateTime createdAt;
   final DateTime modifiedAt;
   final int size;
+  final String relativePath;
+  final int pageCount;
 
   PdfModel({
     required this.path,
@@ -14,9 +16,10 @@ class PdfModel {
     required this.createdAt,
     required this.modifiedAt,
     required this.size,
+    required this.relativePath,
+    this.pageCount = 0,
   });
 
-  // Convert from entity
   factory PdfModel.fromEntity(PdfEntity entity) {
     return PdfModel(
       path: entity.file.path,
@@ -24,10 +27,11 @@ class PdfModel {
       createdAt: entity.createdAt,
       modifiedAt: entity.modifiedAt,
       size: entity.size,
+      relativePath: entity.relativePath,
+      pageCount: entity.pageCount,
     );
   }
 
-  // Convert to entity
   PdfEntity toEntity() {
     return PdfEntity(
       file: File(path),
@@ -35,22 +39,8 @@ class PdfModel {
       createdAt: createdAt,
       modifiedAt: modifiedAt,
       size: size,
-    );
-  }
-
-  PdfModel copyWith({
-    String? path,
-    String? name,
-    DateTime? createdAt,
-    DateTime? modifiedAt,
-    int? size,
-  }) {
-    return PdfModel(
-      path: path ?? this.path,
-      name: name ?? this.name,
-      createdAt: createdAt ?? this.createdAt,
-      modifiedAt: modifiedAt ?? this.modifiedAt,
-      size: size ?? this.size,
+      relativePath: relativePath,
+      pageCount: pageCount,
     );
   }
 }

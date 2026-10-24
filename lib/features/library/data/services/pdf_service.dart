@@ -5,13 +5,14 @@ import 'package:path/path.dart' as path;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
+import 'package:paperwise_pdf_maker/core/constants/app_constants.dart';
+import 'package:paperwise_pdf_maker/features/library/data/services/library_paths.dart';
 import 'package:paperwise_pdf_maker/features/scan/domain/value_objects/page_size_mode.dart';
 
 class PDFService {
   /// Gets the default save directory for PDFs
   Future<String> getDefaultPdfDirectory() async {
-    final documentsDir = await getApplicationDocumentsDirectory();
-    final pdfDir = Directory(path.join(documentsDir.path, 'Paperwise', 'PDF'));
+    final pdfDir = await LibraryPaths.pdfRoot();
     if (!await pdfDir.exists()) {
       await pdfDir.create(recursive: true);
     }
@@ -21,8 +22,11 @@ class PDFService {
   /// Gets the default save directory for images
   Future<String> getDefaultImageDirectory() async {
     final documentsDir = await getApplicationDocumentsDirectory();
-    final imageDir =
-        Directory(path.join(documentsDir.path, 'Paperwise', 'Images'));
+    final imageDir = Directory(path.join(
+      documentsDir.path,
+      AppConstants.pdfDirectoryName,
+      AppConstants.imagesSubdirectory,
+    ));
     if (!await imageDir.exists()) {
       await imageDir.create(recursive: true);
     }
@@ -34,6 +38,7 @@ class PDFService {
     List<File> images,
     String fileName, {
     PageSizeMode pageSizeMode = PageSizeMode.a4,
+    String folderRelative = '',
     void Function(String status, double? progress)? onProgress,
   }) async {
     try {
@@ -82,18 +87,18 @@ class PDFService {
         );
       }
 
-      // Get save location (always use default)
-      final saveLocation = await getDefaultPdfDirectory();
-
-      // Ensure valid filename
+      final fs = await LibraryPaths.createFileSystem();
       final sanitizedFileName =
           fileName.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
-      final file = File(path.join(saveLocation, sanitizedFileName));
 
       onProgress?.call('Building PDF...', null);
       final pdfBytes = await pdf.save();
       onProgress?.call('Saving PDF...', 0.9);
-      await file.writeAsBytes(pdfBytes);
+      final file = await fs.saveBytes(
+        pdfBytes,
+        sanitizedFileName,
+        folderRelative: folderRelative,
+      );
       onProgress?.call('PDF ready', 1);
       return file;
     } catch (e) {

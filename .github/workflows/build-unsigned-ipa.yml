@@ -1,0 +1,34 @@
+name: Build Unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8'
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build unsigned IPA
+        run: flutter build ipa --release
+        env:
+          CODE_SIGNING_ALLOWED: false
+
+      - name: Upload IPA to Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-ipa
+          path: build/ios/ipa/*.ipa
+          retention-days: 30

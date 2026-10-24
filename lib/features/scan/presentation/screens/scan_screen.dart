@@ -21,6 +21,7 @@ import 'package:paperwise_pdf_maker/features/scan/presentation/screens/camera_sc
 import 'package:paperwise_pdf_maker/features/scan/presentation/screens/image_filter_editor_screen.dart';
 import 'package:paperwise_pdf_maker/features/scan/presentation/screens/freeform_crop_screen.dart';
 import 'package:paperwise_pdf_maker/features/library/data/services/pdf_service.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/providers/library_provider.dart';
 import 'package:paperwise_pdf_maker/features/scan/presentation/widgets/image_preview_card.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
 
@@ -421,6 +422,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _selectedImages,
         fileName,
         pageSizeMode: _pageSizeMode,
+        folderRelative: ref.read(libraryProvider).saveFolderRelative,
         onProgress: (status, progress) {
           if (!mounted) return;
           setState(() {

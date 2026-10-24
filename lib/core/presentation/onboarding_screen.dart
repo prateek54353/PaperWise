@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:paperwise_pdf_maker/core/theme/app_tokens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -11,31 +14,55 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  String _currentVersion = 'Loading...';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _currentVersion = packageInfo.version;
+      });
+    }
+  }
 
   final List<OnboardingPage> _pages = [
+    OnboardingPage(
+      title: 'What\'s New',
+      description: 'Discover the latest features and improvements in PaperWise.',
+      icon: Icons.update,
+      color: paperWiseBrandSeed,
+      isUpdatePage: true,
+    ),
     OnboardingPage(
       title: 'Welcome to PaperWise',
       description: 'Your personal document scanner. Scan, organize, and share PDFs with ease.',
       icon: Icons.document_scanner,
-      color: Colors.blue,
+      color: paperWiseBrandSeed,
     ),
     OnboardingPage(
       title: 'Scan Documents',
       description: 'Use your camera to scan papers, receipts, or any document. Apply filters to enhance quality.',
       icon: Icons.camera_alt,
-      color: Colors.green,
+      color: paperWiseBrandSeed,
     ),
     OnboardingPage(
       title: 'Organize PDFs',
-      description: 'Rename, merge, split, and share your PDFs. Use batch operations to manage multiple files.',
+      description: 'Create real folders, move PDFs, rename, merge, split, and share. Batch operations stay available.',
       icon: Icons.folder_open,
-      color: Colors.orange,
+      color: paperWiseBrandSeed,
     ),
     OnboardingPage(
-      title: 'Get Started',
-      description: 'Tap the button below to start scanning your first document.',
-      icon: Icons.play_arrow,
-      color: Colors.purple,
+      title: 'Join Our Community',
+      description: 'Connect with other users, get support, and stay updated on new features.',
+      icon: Icons.people,
+      color: paperWiseBrandSeed,
+      isCommunityPage: true,
     ),
   ];
 
@@ -47,9 +74,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
+    final packageInfo = await PackageInfo.fromPlatform();
     await prefs.setBool('onboarding_completed', true);
+    await prefs.setString('last_seen_version', packageInfo.version);
     if (mounted) {
       Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not launch $url')),
+        );
+      }
     }
   }
 
@@ -79,6 +119,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPage(OnboardingPage page) {
+    if (page.isUpdatePage) {
+      return _buildUpdatePage();
+    }
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
@@ -112,6 +155,106 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             textAlign: TextAlign.center,
+          ),
+          if (page.isCommunityPage) ...[
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _CommunityButton(
+                  icon: Icons.discord,
+                  label: 'Discord',
+                  color: const Color(0xFF5865F2),
+                  onTap: () => _launchUrl('https://discord.gg/HsqzDNSDqg'),
+                ),
+                _CommunityButton(
+                  icon: Icons.telegram,
+                  label: 'Telegram',
+                  color: const Color(0xFF0088cc),
+                  onTap: () => _launchUrl('https://t.me/paperwiseofficial'),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpdatePage() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.all(32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.update,
+            size: 64,
+            color: colorScheme.primary,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'PaperWise v$_currentVersion',
+            style: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.star,
+                      color: colorScheme.primary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'What\'s New',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const _UpdateFeature(
+                  icon: Icons.search,
+                  title: 'Search PDFs',
+                  description: 'Quickly find your documents',
+                ),
+                const SizedBox(height: 6),
+                const _UpdateFeature(
+                  icon: Icons.sort,
+                  title: 'Sort by Date/Name',
+                  description: 'Organize your library',
+                ),
+                const SizedBox(height: 6),
+                const _UpdateFeature(
+                  icon: Icons.image,
+                  title: 'PDF Thumbnails',
+                  description: 'Visual previews in library',
+                ),
+                const SizedBox(height: 6),
+                const _UpdateFeature(
+                  icon: Icons.school,
+                  title: 'Onboarding',
+                  description: 'Better first-time experience',
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -177,17 +320,116 @@ class OnboardingPage {
   final String description;
   final IconData icon;
   final Color color;
+  final bool isCommunityPage;
+  final bool isUpdatePage;
 
   OnboardingPage({
     required this.title,
     required this.description,
     required this.icon,
     required this.color,
+    this.isCommunityPage = false,
+    this.isUpdatePage = false,
   });
 }
 
 /// Check if onboarding should be shown
 Future<bool> shouldShowOnboarding() async {
   final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool('onboarding_completed') != true;
+  final packageInfo = await PackageInfo.fromPlatform();
+  final lastSeenVersion = prefs.getString('last_seen_version');
+  
+  // Show onboarding if never completed OR if version has changed
+  final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+  return !onboardingCompleted || lastSeenVersion != packageInfo.version;
+}
+
+class _UpdateFeature extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _UpdateFeature({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: theme.colorScheme.primary,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CommunityButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _CommunityButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:paperwise_pdf_maker/core/presentation/onboarding_screen.dart';
-import 'package:paperwise_pdf_maker/core/presentation/update_screen.dart';
-import 'package:paperwise_pdf_maker/core/services/crashlytics_service.dart';
 import 'package:paperwise_pdf_maker/core/services/trash_service.dart';
-import 'package:paperwise_pdf_maker/core/services/update_service.dart';
 import 'package:paperwise_pdf_maker/core/theme/app_theme.dart';
 import 'package:paperwise_pdf_maker/core/widgets/common_widgets.dart';
 import 'package:paperwise_pdf_maker/features/library/data/services/pdf_thumbnail_service.dart';
-import 'package:paperwise_pdf_maker/features/library/presentation/screens/home_screen.dart';
+import 'package:paperwise_pdf_maker/features/library/presentation/screens/main_shell.dart';
 import 'package:paperwise_pdf_maker/features/settings/presentation/providers/settings_provider.dart';
 
 void main() async {
-  // Ensure Flutter binding is initialized before Firebase
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Crashlytics before running the app
-  await CrashlyticsService.initialize();
-  
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -38,8 +30,6 @@ class _AppContent extends ConsumerStatefulWidget {
 }
 
 class _AppContentState extends ConsumerState<_AppContent> {
-  final UpdateService _updateService = UpdateService();
-  bool _shouldShowUpdate = false;
   bool _shouldShowOnboarding = false;
   bool _isLoading = true;
 
@@ -59,17 +49,15 @@ class _AppContentState extends ConsumerState<_AppContent> {
     // Clean up thumbnail cache
     await PdfThumbnailService().cleanupCache();
     
-    // Check for update screen and onboarding
+    // Check for onboarding
     await _checkStatus();
   }
 
   Future<void> _checkStatus() async {
-    final shouldShowUpdate = await _updateService.shouldShowUpdateScreen();
     final showOnboarding = await shouldShowOnboarding();
     
     if (mounted) {
       setState(() {
-        _shouldShowUpdate = shouldShowUpdate;
         _shouldShowOnboarding = showOnboarding;
         _isLoading = false;
       });
@@ -106,9 +94,6 @@ class _AppContentState extends ConsumerState<_AppContent> {
     if (_shouldShowOnboarding) {
       return const OnboardingScreen();
     }
-    if (_shouldShowUpdate) {
-      return const UpdateScreen();
-    }
-    return const HomeScreen();
+    return const MainShell();
   }
 }

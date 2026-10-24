@@ -8,16 +8,26 @@ class PdfEntity {
   final int size;
   final int pageCount;
 
+  /// Path relative to the PDF library root, using `/` separators.
+  final String relativePath;
+
   PdfEntity({
     required this.file,
     required this.name,
     required this.createdAt,
     required this.modifiedAt,
     required this.size,
-    this.pageCount = 1,
-  });
+    this.pageCount = 0,
+    String? relativePath,
+  }) : relativePath = relativePath ?? name;
 
   String get path => file.path;
+
+  String get folderRelativePath {
+    final separator = relativePath.lastIndexOf('/');
+    if (separator <= 0) return '';
+    return relativePath.substring(0, separator);
+  }
 
   PdfEntity copyWith({
     File? file,
@@ -26,6 +36,7 @@ class PdfEntity {
     DateTime? modifiedAt,
     int? size,
     int? pageCount,
+    String? relativePath,
   }) {
     return PdfEntity(
       file: file ?? this.file,
@@ -34,6 +45,7 @@ class PdfEntity {
       modifiedAt: modifiedAt ?? this.modifiedAt,
       size: size ?? this.size,
       pageCount: pageCount ?? this.pageCount,
+      relativePath: relativePath ?? this.relativePath,
     );
   }
 
@@ -42,9 +54,9 @@ class PdfEntity {
       identical(this, other) ||
       other is PdfEntity &&
           runtimeType == other.runtimeType &&
-          file.path == other.file.path &&
+          relativePath == other.relativePath &&
           name == other.name;
 
   @override
-  int get hashCode => Object.hash(file.path, name);
+  int get hashCode => Object.hash(relativePath, name);
 }

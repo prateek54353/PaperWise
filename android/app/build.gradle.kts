@@ -75,8 +75,6 @@ android {
 
     buildTypes {
         debug {
-            // Remove applicationIdSuffix to match Firebase config
-            // applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             signingConfig = signingConfigs.getByName("debug")
         }
@@ -146,4 +144,3 @@ gradle.taskGraph.whenReady {
         }
     }
 }
-apply(plugin = "com.google.gms.google-services")

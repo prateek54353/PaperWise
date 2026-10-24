@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:paperwise_pdf_maker/core/services/update_service.dart';
+import 'package:paperwise_pdf_maker/features/library/data/services/library_paths.dart';
 import 'package:paperwise_pdf_maker/core/utils/extensions.dart';
 import 'package:paperwise_pdf_maker/features/settings/domain/value_objects/compression_level.dart';
 import 'package:paperwise_pdf_maker/features/settings/domain/value_objects/theme_mode.dart';
@@ -9,7 +9,9 @@ import 'package:paperwise_pdf_maker/features/settings/presentation/screens/about
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.embedded = false});
+
+  final bool embedded;
 
   Future<void> _launchUrl(BuildContext context, String url) async {
     final uri = Uri.parse(url);
@@ -157,6 +159,7 @@ class SettingsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: !embedded,
         title: const Text('Settings'),
       ),
       body: ListView(
@@ -184,6 +187,19 @@ class SettingsScreen extends ConsumerWidget {
             onTap: () => _showCompressionDialog(context, ref),
           ),
           _buildSectionHeader(context, 'Storage'),
+          FutureBuilder(
+            future: LibraryPaths.pdfRoot(),
+            builder: (context, snapshot) {
+              final path = snapshot.data?.path ?? 'Loading…';
+              return ListTile(
+                title: const Text('PDF library'),
+                subtitle: Text(
+                  'App-private folder. PDFs live in real directories under:\n$path',
+                ),
+                isThreeLine: true,
+              );
+            },
+          ),
           SwitchListTile(
             title: const Text('Auto Cleanup Temp Files'),
             subtitle: const Text('Automatically clean temporary files'),
@@ -219,13 +235,6 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               );
             },
-          ),
-          _buildSectionHeader(context, 'Advanced'),
-          ListTile(
-            title: const Text('Reset Update Screen'),
-            subtitle: const Text('Show the update screen again'),
-            trailing: const Icon(Icons.update),
-            onTap: () => _resetUpdateScreen(context),
           ),
         ],
       ),
@@ -283,36 +292,5 @@ class SettingsScreen extends ConsumerWidget {
         );
       },
     );
-  }
-
-  Future<void> _resetUpdateScreen(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Update Screen'),
-        content: const Text('This will show the update screen again on next app launch. Continue?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      final updateService = UpdateService();
-      await updateService.clearLastSeenVersion();
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Update screen will be shown on next launch')),
-        );
-      }
-    }
   }
 }

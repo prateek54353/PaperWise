@@ -3,8 +3,9 @@ class AppConstants {
   AppConstants._();
 
   // App Info
-  static const String appName = 'Paperwise';
-  static const String appVersion = '2.7.1';
+  static const String appName = 'PaperWise';
+  static const String appVersion = '3.0.0';
+  static const String appTagline = 'Scan. Create. Organize.';
   static const String contactEmail = 'aishwarprateek@gmail.com';
 
   // Storage

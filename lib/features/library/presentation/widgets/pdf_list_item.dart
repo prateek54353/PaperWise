@@ -13,6 +13,7 @@ class PdfListItem extends ConsumerStatefulWidget {
   final VoidCallback onDelete;
   final VoidCallback onShare;
   final VoidCallback? onSplit;
+  final VoidCallback? onMove;
 
   const PdfListItem({
     super.key,
@@ -22,6 +23,7 @@ class PdfListItem extends ConsumerStatefulWidget {
     required this.onDelete,
     required this.onShare,
     this.onSplit,
+    this.onMove,
   });
 
   @override
@@ -37,6 +39,15 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
   void initState() {
     super.initState();
     _loadThumbnail();
+  }
+
+  @override
+  void didUpdateWidget(covariant PdfListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pdf.file.path != widget.pdf.file.path ||
+        oldWidget.pdf.modifiedAt != widget.pdf.modifiedAt) {
+      _loadThumbnail();
+    }
   }
 
   Future<void> _loadThumbnail() async {
@@ -62,9 +73,7 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      elevation: 2,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: isSelectionMode
@@ -187,64 +196,46 @@ class _PdfListItemState extends ConsumerState<PdfListItem> {
                             color: colorScheme.onSurfaceVariant,
                           ),
                           itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'rename',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.drive_file_rename_outline,
-                                      color: colorScheme.primary),
-                                  const SizedBox(width: 8),
-                                  Text('Rename',
-                                      style: TextStyle(
-                                          color: colorScheme.primary)),
-                                ],
-                              ),
+                            const PopupMenuItem(
+                              value: 'open',
+                              child: Text('Open'),
                             ),
-                            if (widget.onSplit != null)
-                              PopupMenuItem(
-                                value: 'split',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.call_split,
-                                        color: colorScheme.tertiary),
-                                    const SizedBox(width: 8),
-                                    Text('Split',
-                                        style: TextStyle(
-                                            color: colorScheme.tertiary)),
-                                  ],
-                                ),
-                              ),
-                            PopupMenuItem(
+                            const PopupMenuItem(
                               value: 'share',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.share_outlined,
-                                      color: colorScheme.secondary),
-                                  const SizedBox(width: 8),
-                                  Text('Share',
-                                      style: TextStyle(
-                                          color: colorScheme.secondary)),
-                                ],
-                              ),
+                              child: Text('Share'),
                             ),
+                            const PopupMenuItem(
+                              value: 'rename',
+                              child: Text('Rename'),
+                            ),
+                            if (widget.onMove != null)
+                              const PopupMenuItem(
+                                value: 'move',
+                                child: Text('Move to...'),
+                              ),
+                            if (widget.onSplit != null)
+                              const PopupMenuItem(
+                                value: 'split',
+                                child: Text('Split'),
+                              ),
                             PopupMenuItem(
                               value: 'delete',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.delete_outline,
-                                      color: colorScheme.error),
-                                  const SizedBox(width: 8),
-                                  Text('Delete',
-                                      style:
-                                          TextStyle(color: colorScheme.error)),
-                                ],
+                              child: Text(
+                                'Delete',
+                                style: TextStyle(color: colorScheme.error),
                               ),
                             ),
                           ],
                           onSelected: (value) {
                             switch (value) {
+                              case 'open':
+                                widget.onTap();
+                                break;
                               case 'rename':
                                 widget.onRename();
+                                break;
+                              case 'move':
+                                widget.onMove?.call();
                                 break;
                               case 'split':
                                 widget.onSplit?.call();
